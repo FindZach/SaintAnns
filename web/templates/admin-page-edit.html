@@ -1,0 +1,80 @@
+{{define "admin-page-edit.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-page-edit-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main parish-admin-main-editor">
+        {{with .pageRow}}
+        <header class="parish-admin-head parish-editor-head">
+            <div>
+                <p class="parish-admin-subtitle"><a href="/admin/pages" class="parish-admin-link"><i class="fas fa-arrow-left"></i> Pages</a></p>
+                <h1 contenteditable="plaintext-only" id="page-title">{{.Title}}</h1>
+                <p class="parish-admin-subtitle">
+                    <code>/{{.Slug}}/</code> &middot; nav: <input type="text" id="page-nav-label" value="{{.NavLabel}}" placeholder="Nav label" class="parish-editor-inline-input">
+                </p>
+            </div>
+            <div class="parish-editor-head-actions">
+                <a href="/{{.Slug}}/" target="_blank" rel="noopener" class="parish-btn parish-btn-ghost">
+                    <i class="fas fa-eye"></i> Preview
+                </a>
+                <button type="button" id="save-page-btn" class="parish-btn parish-btn-primary">
+                    <i class="fas fa-check"></i> Save
+                </button>
+            </div>
+        </header>
+
+        <p id="editor-status" class="parish-editor-status" hidden></p>
+
+        <section id="block-editor" class="parish-editor-blocks"
+                 data-page-slug="{{.Slug}}"
+                 data-page-published="{{if .PublishedAt}}1{{else}}0{{end}}"
+                 data-blocks="{{$.blocksJSON}}">
+            <!-- Blocks render here via admin.js -->
+            <p id="editor-loading" class="parish-admin-empty">Loading blocks…</p>
+        </section>
+
+        <div class="parish-editor-add">
+            <button type="button" id="add-block-btn" class="parish-btn parish-btn-ghost">
+                <i class="fas fa-plus"></i> Add block
+            </button>
+        </div>
+
+        <!-- Block type palette -->
+        <div id="block-palette" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="palette-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="palette-title">Pick a block type</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </header>
+                <div id="palette-list" class="parish-palette-grid"></div>
+            </div>
+        </div>
+
+        <!-- Asset picker -->
+        <div id="asset-picker" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel parish-admin-modal-wide" role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="asset-picker-title">Asset picker</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </header>
+                <div class="parish-asset-picker-upload">
+                    <label for="asset-upload-input" class="parish-btn parish-btn-ghost">
+                        <i class="fas fa-upload"></i> Upload new
+                    </label>
+                    <input type="file" id="asset-upload-input" hidden>
+                    <span id="asset-upload-status" class="parish-admin-subtitle"></span>
+                </div>
+                <div id="asset-picker-grid" class="parish-asset-grid"></div>
+            </div>
+        </div>
+
+        {{end}}
+    </main>
+</div>
+{{end}}

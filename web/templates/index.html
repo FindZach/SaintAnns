@@ -1,0 +1,120 @@
+{{define "index.html"}}{{template "base" .}}{{end}}
+
+{{define "home-content"}}
+<section class="parish-hero">
+    <div class="parish-hero-inner">
+        <p class="parish-eyebrow">Our Lady of the Valley Parish</p>
+        <h1 class="parish-hero-title">A home for faith in Hornell &amp; Rexville</h1>
+        <p class="parish-hero-lede">
+            Two historic churches, one Catholic community in the Diocese of Rochester.
+            Whether you're a parishioner, a visitor, or searching for a parish home — you are welcome here.
+        </p>
+        <div class="parish-hero-actions">
+            <a href="/liturgy-and-sacraments/mass-times/" class="parish-btn parish-btn-primary">
+                <i class="fas fa-church"></i>
+                Join us for Mass
+            </a>
+            <a href="/contact" class="parish-btn parish-btn-ghost">
+                Contact the parish
+            </a>
+        </div>
+    </div>
+</section>
+
+<section id="mass" class="parish-section parish-mass">
+    <div class="parish-container">
+        <header class="parish-section-head">
+            <p class="parish-eyebrow">Join us for Mass</p>
+            <h2 class="parish-section-title">Mass Times</h2>
+        </header>
+        <div class="parish-mass-grid">
+            {{range .massGroups}}
+            <article class="parish-card">
+                <h3 class="parish-card-title">{{.Label}}</h3>
+                <ul class="parish-mass-list">
+                    {{range .Rows}}
+                    <li>
+                        <span>
+                            {{if eq .DayOfWeek 0}}Sunday{{else if eq .DayOfWeek 1}}Monday{{else if eq .DayOfWeek 2}}Tuesday{{else if eq .DayOfWeek 3}}Wednesday{{else if eq .DayOfWeek 4}}Thursday{{else if eq .DayOfWeek 5}}Friday{{else}}Saturday{{end}}
+                            {{if .Label}} &middot; {{.Label}}{{end}}
+                        </span>
+                        <strong>{{formatTime .TimeOfDay}}</strong>
+                    </li>
+                    {{end}}
+                </ul>
+                {{range .Rows}}{{if .StreamedURL}}<p class="parish-card-note"><i class="fas fa-video"></i> Weekday Mass streamed on <a href="{{.StreamedURL}}" target="_blank" rel="noopener">Facebook</a>.</p>{{break}}{{end}}{{end}}
+            </article>
+            {{end}}
+            {{if .confessionTimes}}
+            <article class="parish-card parish-card-accent">
+                <h3 class="parish-card-title">Reconciliation</h3>
+                <ul class="parish-mass-list">
+                    {{range .confessionTimes}}
+                    <li>
+                        <span>
+                            {{if eq .DayOfWeek 0}}Sunday{{else if eq .DayOfWeek 1}}Monday{{else if eq .DayOfWeek 2}}Tuesday{{else if eq .DayOfWeek 3}}Wednesday{{else if eq .DayOfWeek 4}}Thursday{{else if eq .DayOfWeek 5}}Friday{{else}}Saturday{{end}}
+                            {{if .Label}} &middot; {{.Label}}{{end}}
+                        </span>
+                        <strong>{{formatTime .StartOfDay}} – {{formatTime .EndOfDay}}</strong>
+                    </li>
+                    {{end}}
+                </ul>
+                <p class="parish-card-note">Or call the parish office for an appointment.</p>
+            </article>
+            {{end}}
+        </div>
+    </div>
+</section>
+
+<section id="courier" class="parish-section parish-section-tinted">
+    <div class="parish-container parish-two-col">
+        <div>
+            <p class="parish-eyebrow">Diocese of Rochester</p>
+            <h2 class="parish-section-title">Latest from the Catholic Courier</h2>
+            {{if .headlines}}
+            <ul class="parish-courier-list">
+                {{range .headlines}}
+                <li>
+                    <a href="{{.URL}}" target="_blank" rel="noopener">
+                        <strong>{{.Title}}</strong>
+                        <span class="parish-courier-meta">{{.PublishedAt.Format "January 2, 2006"}}{{if .Byline}} &middot; {{.Byline}}{{end}}{{if .Category}} &middot; {{.Category}}{{end}}</span>
+                    </a>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-prose">Headlines from <a href="https://catholiccourier.com/" target="_blank" rel="noopener">catholiccourier.com</a> will appear here once the feed is read.</p>
+            {{end}}
+            <a href="https://catholiccourier.com/" target="_blank" rel="noopener" class="parish-btn parish-btn-ghost">
+                Read the Catholic Courier <i class="fas fa-arrow-up-right-from-square"></i>
+            </a>
+        </div>
+        <aside class="parish-card parish-card-soft">
+            <h3 class="parish-card-title">New to the parish?</h3>
+            <p class="parish-prose">
+                We'd love to welcome you. Register online, update your information, or ask about getting involved in a ministry.
+            </p>
+            <a href="/contact" class="parish-btn parish-btn-primary">Reach out</a>
+        </aside>
+    </div>
+</section>
+
+<section id="about" class="parish-section">
+    <div class="parish-container">
+        <header class="parish-section-head">
+            <p class="parish-eyebrow">About Our Lady of the Valley</p>
+            <h2 class="parish-section-title">Two churches, one parish family</h2>
+        </header>
+        <div class="parish-two-col">
+            <div class="parish-prose">
+                <p>Our Lady of the Valley Parish is a Catholic community in the Diocese of Rochester, formed from the historic parishes of St. Ann in Hornell and St. Mary in Rexville, New York.</p>
+                <p>We celebrate the sacraments, form disciples through faith formation for all ages, and serve our neighbors through more than a dozen active ministries.</p>
+            </div>
+            <div class="parish-prose">
+                <p>Through Baptism, Reconciliation, Eucharist, Confirmation, Anointing, Matrimony and Holy Orders, we encounter Christ in the sacramental life of the Church.</p>
+                <p>Whether you are returning to the faith, searching, or lifelong Catholic &mdash; you are welcome at any of our Masses.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{{end}}

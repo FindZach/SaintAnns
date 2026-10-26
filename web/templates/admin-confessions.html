@@ -1,0 +1,75 @@
+{{define "admin-confessions.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-confessions-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Confession Times</h1>
+            <p class="parish-admin-subtitle">Reconciliation schedule. Use the season field to show different hours during Advent or Lent.</p>
+        </header>
+
+        <section class="parish-admin-panel">
+            <table class="parish-admin-table" data-table="confession-times">
+                <thead>
+                    <tr>
+                        <th>Church</th>
+                        <th>Day</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Season</th>
+                        <th>Label</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="confession-rows">
+                    {{range .rows}}
+                    <tr data-row-id="{{.ID}}">
+                        <td>
+                            <select data-field="church">
+                                {{$row := .}}
+                                {{range $.churchOptions}}
+                                <option value="{{.Value}}" {{if eq $row.Church .Value}}selected{{end}}>{{.Label}}</option>
+                                {{end}}
+                            </select>
+                        </td>
+                        <td>
+                            <select data-field="day_of_week">
+                                {{$dow := .DayOfWeek}}
+                                <option value="0" {{if eq $dow 0}}selected{{end}}>Sunday</option>
+                                <option value="1" {{if eq $dow 1}}selected{{end}}>Monday</option>
+                                <option value="2" {{if eq $dow 2}}selected{{end}}>Tuesday</option>
+                                <option value="3" {{if eq $dow 3}}selected{{end}}>Wednesday</option>
+                                <option value="4" {{if eq $dow 4}}selected{{end}}>Thursday</option>
+                                <option value="5" {{if eq $dow 5}}selected{{end}}>Friday</option>
+                                <option value="6" {{if eq $dow 6}}selected{{end}}>Saturday</option>
+                            </select>
+                        </td>
+                        <td><input type="time" data-field="start_of_day" value="{{.StartOfDay}}"></td>
+                        <td><input type="time" data-field="end_of_day" value="{{.EndOfDay}}"></td>
+                        <td>
+                            <select data-field="season">
+                                {{$season := .Season}}
+                                {{range $.seasonOptions}}
+                                <option value="{{.Value}}" {{if eq $season .Value}}selected{{end}}>{{.Label}}</option>
+                                {{end}}
+                            </select>
+                        </td>
+                        <td><input type="text" data-field="label" value="{{.Label}}"></td>
+                        <td class="parish-admin-row-actions">
+                            <button type="button" class="parish-admin-link" data-action="save-row">Save</button>
+                            <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-row">Delete</button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+
+            <button type="button" id="add-confession-row" class="parish-btn parish-btn-ghost parish-admin-table-add"
+                    data-create-url="/api/v1/admin/confession-times">
+                <i class="fas fa-plus"></i> Add confession time
+            </button>
+        </section>
+    </main>
+</div>
+{{end}}

@@ -1,0 +1,171 @@
+{{define "parish-registration.html"}}{{template "base" .}}{{end}}
+
+{{define "parish-registration-content"}}
+<section class="parish-section">
+    <div class="parish-container parish-two-col">
+        <div>
+            <p class="parish-eyebrow">Join the parish</p>
+            <h1 class="parish-section-title">Parish Registration</h1>
+            <p class="parish-prose">
+                Welcome! Registering as a parishioner tells the parish office you consider Our Lady of the Valley your spiritual
+                home. It's also what we use to prepare you to receive the sacraments, send bulletins and envelopes, and
+                reach out if we can be of help.
+            </p>
+            <p class="parish-prose">
+                Already registered and just need to update your address or add a household member? Use the same form — pick
+                "Information update" at the top.
+            </p>
+            <p class="parish-prose">
+                Prefer to call? The parish office is at <a href="tel:(607) 324-7698">(607) 324-7698</a>.
+            </p>
+        </div>
+
+        <form id="registration-form" class="parish-form" novalidate>
+            <fieldset class="parish-fieldset">
+                <legend>Request type</legend>
+                <div class="parish-field">
+                    <label for="reg-intent">What are you doing?</label>
+                    <select id="reg-intent" name="intent" required>
+                        <option value="new">New registration</option>
+                        <option value="update">Information update (already registered)</option>
+                        <option value="change">Change of registration</option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <fieldset class="parish-fieldset">
+                <legend>Household head</legend>
+                <div class="parish-form-row">
+                    <div class="parish-field">
+                        <label for="reg-head-first">First name</label>
+                        <input type="text" id="reg-head-first" name="head_first_name" required autocomplete="given-name">
+                    </div>
+                    <div class="parish-field">
+                        <label for="reg-head-last">Last name</label>
+                        <input type="text" id="reg-head-last" name="head_last_name" required autocomplete="family-name">
+                    </div>
+                </div>
+                <div class="parish-form-row">
+                    <div class="parish-field">
+                        <label for="reg-head-email">Email</label>
+                        <input type="email" id="reg-head-email" name="head_email" autocomplete="email">
+                    </div>
+                    <div class="parish-field">
+                        <label for="reg-head-phone">Phone</label>
+                        <input type="tel" id="reg-head-phone" name="head_phone" autocomplete="tel">
+                    </div>
+                </div>
+                <p class="parish-admin-subtitle">An email or phone is required so we can confirm your registration.</p>
+            </fieldset>
+
+            <fieldset class="parish-fieldset">
+                <legend>Spouse <span class="parish-field-optional">(optional)</span></legend>
+                <div class="parish-form-row">
+                    <div class="parish-field">
+                        <label for="reg-spouse-first">First name</label>
+                        <input type="text" id="reg-spouse-first" name="spouse_first_name">
+                    </div>
+                    <div class="parish-field">
+                        <label for="reg-spouse-last">Last name</label>
+                        <input type="text" id="reg-spouse-last" name="spouse_last_name">
+                    </div>
+                </div>
+                <div class="parish-form-row">
+                    <div class="parish-field">
+                        <label for="reg-spouse-email">Email</label>
+                        <input type="email" id="reg-spouse-email" name="spouse_email">
+                    </div>
+                    <div class="parish-field">
+                        <label for="reg-spouse-phone">Phone</label>
+                        <input type="tel" id="reg-spouse-phone" name="spouse_phone">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="parish-fieldset">
+                <legend>Address</legend>
+                <div class="parish-field">
+                    <label for="reg-address1">Street address</label>
+                    <input type="text" id="reg-address1" name="address1" required autocomplete="address-line1">
+                </div>
+                <div class="parish-field">
+                    <label for="reg-address2">Apt / Unit <span class="parish-field-optional">(optional)</span></label>
+                    <input type="text" id="reg-address2" name="address2" autocomplete="address-line2">
+                </div>
+                <div class="parish-form-row">
+                    <div class="parish-field">
+                        <label for="reg-city">City</label>
+                        <input type="text" id="reg-city" name="city" required autocomplete="address-level2">
+                    </div>
+                    <div class="parish-field">
+                        <label for="reg-state">State</label>
+                        <input type="text" id="reg-state" name="state" value="NY" required autocomplete="address-level1" maxlength="2">
+                    </div>
+                    <div class="parish-field">
+                        <label for="reg-zip">ZIP</label>
+                        <input type="text" id="reg-zip" name="postal_code" required autocomplete="postal-code" inputmode="numeric">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="parish-fieldset">
+                <legend>Other household members <span class="parish-field-optional">(optional)</span></legend>
+                <div class="parish-field">
+                    <label for="reg-members">List any children or other household members</label>
+                    <textarea id="reg-members" name="household_members" rows="4"
+                              placeholder="One per line: Name — Relationship — Date of birth (if under 18)"></textarea>
+                </div>
+            </fieldset>
+
+            <fieldset class="parish-fieldset">
+                <legend>Preferences</legend>
+                <div class="parish-field">
+                    <label for="reg-primary-church">Primary church</label>
+                    <select id="reg-primary-church" name="primary_church">
+                        <option value="">No preference</option>
+                        <option value="st-ann">St. Ann's, Hornell</option>
+                        <option value="st-mary">St. Mary's, Rexville</option>
+                        <option value="either">Either church</option>
+                    </select>
+                </div>
+                <div class="parish-field">
+                    <label>
+                        <input type="checkbox" id="reg-envelopes" name="wants_envelopes">
+                        I'd like to receive offering envelopes
+                    </label>
+                </div>
+                <div class="parish-field" id="envelope-number-field" hidden>
+                    <label for="reg-envelope-number">Existing envelope # <span class="parish-field-optional">(if you have one)</span></label>
+                    <input type="text" id="reg-envelope-number" name="envelope_number">
+                </div>
+                <fieldset class="parish-fieldset-inline">
+                    <legend>Preferred contact</legend>
+                    <label><input type="checkbox" name="contact_prefs" value="email" checked> Email</label>
+                    <label><input type="checkbox" name="contact_prefs" value="phone"> Phone</label>
+                    <label><input type="checkbox" name="contact_prefs" value="mail"> Postal mail</label>
+                </fieldset>
+            </fieldset>
+
+            <fieldset class="parish-fieldset">
+                <legend>Notes <span class="parish-field-optional">(optional)</span></legend>
+                <div class="parish-field">
+                    <label for="reg-notes">Anything else we should know?</label>
+                    <textarea id="reg-notes" name="notes" rows="4" maxlength="5000"></textarea>
+                </div>
+            </fieldset>
+
+            <!-- Honeypot -->
+            <div class="parish-honeypot" aria-hidden="true">
+                <label for="reg-website">Website</label>
+                <input type="text" id="reg-website" name="website" tabindex="-1" autocomplete="off">
+            </div>
+
+            <p id="reg-error" class="parish-form-error" role="alert" hidden></p>
+            <p id="reg-success" class="parish-form-success" role="status" hidden>
+                Thank you — we've received your registration and will be in touch.
+            </p>
+            <button type="submit" class="parish-btn parish-btn-primary parish-btn-wide">Send registration</button>
+        </form>
+    </div>
+</section>
+{{end}}

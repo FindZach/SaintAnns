@@ -1,0 +1,70 @@
+{{define "admin-bulletins.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-bulletins-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Bulletins</h1>
+            <p class="parish-admin-subtitle">Upload each week's bulletin PDF.</p>
+            <button type="button" id="new-bulletin-btn" class="parish-btn parish-btn-primary parish-admin-head-action">
+                <i class="fas fa-plus"></i> Upload bulletin
+            </button>
+        </header>
+
+        <section class="parish-admin-panel">
+            {{if .bulletins}}
+            <ul class="parish-admin-message-list" id="bulletin-list">
+                {{range .bulletins}}
+                <li class="parish-admin-message" data-row-id="{{.ID}}">
+                    <div class="parish-admin-message-head">
+                        <strong>{{.Label}}</strong>
+                        <span class="parish-admin-message-subject">{{.PublishedOn.Format "Jan 2, 2006"}}</span>
+                    </div>
+                    <div class="parish-admin-message-actions">
+                        {{if .Asset}}<a href="{{.Asset.URL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-file-pdf"></i> View PDF</a>{{end}}
+                        <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-bulletin">Delete</button>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-admin-empty">No bulletins uploaded yet.</p>
+            {{end}}
+        </section>
+
+        <!-- Upload bulletin modal -->
+        <div id="new-bulletin-modal" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="new-bulletin-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="new-bulletin-title">Upload bulletin</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </header>
+                <form id="new-bulletin-form" class="parish-form">
+                    <div class="parish-field">
+                        <label for="bulletin-published-on">Published on</label>
+                        <input type="date" id="bulletin-published-on" name="published_on" required>
+                    </div>
+                    <div class="parish-field">
+                        <label for="bulletin-label">Label</label>
+                        <input type="text" id="bulletin-label" name="label" placeholder="e.g. 30th Sunday in Ordinary Time" required>
+                    </div>
+                    <div class="parish-field">
+                        <label for="bulletin-pdf">PDF file</label>
+                        <input type="file" id="bulletin-pdf" accept="application/pdf" required>
+                        <p class="parish-admin-subtitle" id="bulletin-upload-status"></p>
+                    </div>
+                    <p id="new-bulletin-error" class="parish-form-error" role="alert" hidden></p>
+                    <div class="parish-admin-modal-actions">
+                        <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
+                        <button type="submit" class="parish-btn parish-btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{{end}}

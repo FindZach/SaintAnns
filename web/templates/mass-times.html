@@ -1,0 +1,35 @@
+{{define "mass-times.html"}}{{template "base" .}}{{end}}
+
+{{define "mass-times-content"}}
+<section class="parish-section">
+    <div class="parish-container">
+        <header class="parish-section-head">
+            <p class="parish-eyebrow">Join us for Mass</p>
+            <h1 class="parish-section-title">Mass Times</h1>
+            <p class="parish-prose">Weekend and weekday Masses at St. Ann's in Hornell and St. Mary's in Rexville.</p>
+        </header>
+        <div class="parish-mass-grid">
+            {{range .massGroups}}
+            <article class="parish-card">
+                <h2 class="parish-card-title">{{.Label}}</h2>
+                <ul class="parish-mass-list">
+                    {{range .Rows}}
+                    <li>
+                        <span>
+                            {{if eq .DayOfWeek 0}}Sunday{{else if eq .DayOfWeek 1}}Monday{{else if eq .DayOfWeek 2}}Tuesday{{else if eq .DayOfWeek 3}}Wednesday{{else if eq .DayOfWeek 4}}Thursday{{else if eq .DayOfWeek 5}}Friday{{else}}Saturday{{end}}
+                            {{if .Label}} &middot; {{.Label}}{{end}}
+                        </span>
+                        <strong>{{formatTime .TimeOfDay}}</strong>
+                    </li>
+                    {{end}}
+                </ul>
+                {{range .Rows}}{{if .StreamedURL}}<p class="parish-card-note"><i class="fas fa-video"></i> Weekday Mass streamed on <a href="{{.StreamedURL}}" target="_blank" rel="noopener">Facebook</a>.</p>{{break}}{{end}}{{end}}
+            </article>
+            {{end}}
+        </div>
+        <p class="parish-prose" style="margin-top: 2rem;">
+            See also <a href="/liturgy-and-sacraments/confession-times/">Confession Times</a>.
+        </p>
+    </div>
+</section>
+{{end}}

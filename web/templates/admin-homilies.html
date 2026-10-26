@@ -1,0 +1,88 @@
+{{define "admin-homilies.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-homilies-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Homilies</h1>
+            <p class="parish-admin-subtitle">Post the weekend homily — text, audio URL and video URL are all optional.</p>
+            <button type="button" id="new-homily-btn" class="parish-btn parish-btn-primary parish-admin-head-action">
+                <i class="fas fa-plus"></i> New homily
+            </button>
+        </header>
+
+        <section class="parish-admin-panel">
+            {{if .homilies}}
+            <ul class="parish-admin-message-list" id="homily-list">
+                {{range .homilies}}
+                <li class="parish-admin-message" data-row-id="{{.ID}}">
+                    <div class="parish-admin-message-head">
+                        <strong>{{.Title}}</strong>
+                        <span class="parish-admin-message-subject">{{.PreachedOn.Format "Jan 2, 2006"}}</span>
+                        {{if .Author}}<span class="parish-admin-message-time">{{.Author}}</span>{{end}}
+                    </div>
+                    {{if .Body}}<p class="parish-admin-message-body">{{.Body}}</p>{{end}}
+                    <div class="parish-admin-message-actions">
+                        {{if .AudioURL}}<a href="{{.AudioURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-headphones"></i> Audio</a>{{end}}
+                        {{if .VideoURL}}<a href="{{.VideoURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-video"></i> Video</a>{{end}}
+                        <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-homily">Delete</button>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-admin-empty">No homilies posted yet.</p>
+            {{end}}
+        </section>
+
+        <!-- New homily modal -->
+        <div id="new-homily-modal" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel parish-admin-modal-wide" role="dialog" aria-modal="true" aria-labelledby="new-homily-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="new-homily-title">New homily</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </header>
+                <form id="new-homily-form" class="parish-form">
+                    <div class="parish-form-row">
+                        <div class="parish-field">
+                            <label for="homily-preached-on">Preached on</label>
+                            <input type="date" id="homily-preached-on" name="preached_on" required>
+                        </div>
+                        <div class="parish-field">
+                            <label for="homily-author">Author <span class="parish-field-optional">(optional)</span></label>
+                            <input type="text" id="homily-author" name="author" placeholder="Fr. …">
+                        </div>
+                    </div>
+                    <div class="parish-field">
+                        <label for="homily-title-input">Title</label>
+                        <input type="text" id="homily-title-input" name="title" required>
+                    </div>
+                    <div class="parish-field">
+                        <label for="homily-body">Body <span class="parish-field-optional">(optional)</span></label>
+                        <textarea id="homily-body" name="body" rows="8"></textarea>
+                    </div>
+                    <div class="parish-form-row">
+                        <div class="parish-field">
+                            <label for="homily-audio">Audio URL</label>
+                            <input type="url" id="homily-audio" name="audio_url">
+                        </div>
+                        <div class="parish-field">
+                            <label for="homily-video">Video URL</label>
+                            <input type="url" id="homily-video" name="video_url">
+                        </div>
+                    </div>
+                    <p id="new-homily-error" class="parish-form-error" role="alert" hidden></p>
+                    <div class="parish-admin-modal-actions">
+                        <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
+                        <button type="submit" class="parish-btn parish-btn-primary">Post homily</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{{end}}

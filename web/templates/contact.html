@@ -1,0 +1,67 @@
+{{define "contact.html"}}{{template "base" .}}{{end}}
+
+{{define "contact-content"}}
+<section class="parish-section">
+    <div class="parish-container parish-two-col">
+        <div>
+            <p class="parish-eyebrow">Get in touch</p>
+            <h1 class="parish-section-title">Contact the parish</h1>
+            <p class="parish-prose">
+                Reach the parish office with questions about Mass intentions, sacrament preparation, registration, bulletin submissions,
+                ministry involvement, or pastoral care. We try to respond within a few business days.
+            </p>
+            {{with site}}
+            <div class="parish-contact-details">
+                <p><i class="fas fa-map-marker-alt"></i> {{.OfficeStreet}}, {{.OfficeCity}}</p>
+                <p><i class="fas fa-phone"></i> <a href="tel:{{.OfficePhone}}">{{.OfficePhone}}</a></p>
+                <p><i class="fas fa-envelope"></i> <a href="mailto:{{.Email}}">{{.Email}}</a></p>
+            </div>
+            {{end}}
+        </div>
+
+        <form id="contact-form" class="parish-form" novalidate>
+            <div class="parish-form-row">
+                <div class="parish-field">
+                    <label for="contact-first-name">First name</label>
+                    <input type="text" id="contact-first-name" name="first_name" autocomplete="given-name" required>
+                </div>
+                <div class="parish-field">
+                    <label for="contact-last-name">Last name</label>
+                    <input type="text" id="contact-last-name" name="last_name" autocomplete="family-name" required>
+                </div>
+            </div>
+            <div class="parish-form-row">
+                <div class="parish-field">
+                    <label for="contact-email">Email</label>
+                    <input type="email" id="contact-email" name="email" autocomplete="email" required>
+                </div>
+                <div class="parish-field">
+                    <label for="contact-phone">Phone <span class="parish-field-optional">(optional)</span></label>
+                    <input type="tel" id="contact-phone" name="phone" autocomplete="tel">
+                </div>
+            </div>
+            <div class="parish-field">
+                <label for="contact-subject">Subject</label>
+                <select id="contact-subject" name="subject" required>
+                    <option value="">Choose a subject…</option>
+                    {{range .subjects}}
+                    <option value="{{.Value}}">{{.Label}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="parish-field">
+                <label for="contact-message">Message</label>
+                <textarea id="contact-message" name="message" rows="6" required maxlength="5000"></textarea>
+            </div>
+            <!-- Honeypot: hidden from real users -->
+            <div class="parish-honeypot" aria-hidden="true">
+                <label for="contact-website">Website</label>
+                <input type="text" id="contact-website" name="website" tabindex="-1" autocomplete="off">
+            </div>
+            <p id="contact-error" class="parish-form-error" role="alert" hidden></p>
+            <p id="contact-success" class="parish-form-success" role="status" hidden>Thank you — your message has been sent.</p>
+            <button type="submit" class="parish-btn parish-btn-primary">Send message</button>
+        </form>
+    </div>
+</section>
+{{end}}

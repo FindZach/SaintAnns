@@ -1,0 +1,31 @@
+{{define "confession-times.html"}}{{template "base" .}}{{end}}
+
+{{define "confession-times-content"}}
+<section class="parish-section">
+    <div class="parish-container">
+        <header class="parish-section-head">
+            <p class="parish-eyebrow">Be reconciled to God</p>
+            <h1 class="parish-section-title">Confession Times</h1>
+            <p class="parish-prose">Regularly scheduled times for the Sacrament of Reconciliation. Appointments are also available — call the parish office.</p>
+        </header>
+        {{if .confessionTimes}}
+        <article class="parish-card parish-card-accent" style="max-width: 540px; margin: 0 auto;">
+            <ul class="parish-mass-list">
+                {{range .confessionTimes}}
+                <li>
+                    <span>
+                        {{if eq .DayOfWeek 0}}Sunday{{else if eq .DayOfWeek 1}}Monday{{else if eq .DayOfWeek 2}}Tuesday{{else if eq .DayOfWeek 3}}Wednesday{{else if eq .DayOfWeek 4}}Thursday{{else if eq .DayOfWeek 5}}Friday{{else}}Saturday{{end}}
+                        {{if .Label}} &middot; {{.Label}}{{end}}
+                    </span>
+                    <strong>{{formatTime .StartOfDay}} – {{formatTime .EndOfDay}}</strong>
+                </li>
+                {{end}}
+            </ul>
+            <p class="parish-card-note">Or call the parish office for an appointment.</p>
+        </article>
+        {{else}}
+        <p class="parish-prose">Confession times will be posted here. Please call the parish office.</p>
+        {{end}}
+    </div>
+</section>
+{{end}}

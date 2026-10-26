@@ -1,0 +1,17 @@
+{{define "page.html"}}{{template "base" .}}{{end}}
+
+{{define "cms-content"}}
+<section class="parish-section">
+    <div class="parish-container">
+        <header class="parish-section-head" style="text-align: left; margin-bottom: 2rem;">
+            {{with .pageData}}
+            {{if .NavLabel}}<p class="parish-eyebrow">{{.NavLabel}}</p>{{end}}
+            <h1 class="parish-section-title">{{.Title}}</h1>
+            {{end}}
+        </header>
+        <div class="parish-cms-body">
+            {{.renderedBody}}
+        </div>
+    </div>
+</section>
+{{end}}

@@ -1,0 +1,81 @@
+{{define "admin-registrations.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-registrations-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Registrations</h1>
+            <p class="parish-admin-subtitle">{{.totalRegistrations}} total {{if gt .unreadRegistrations 0}}&middot; {{.unreadRegistrations}} unread{{end}}</p>
+            <div class="parish-admin-tabs">
+                <a href="/admin/registrations" class="parish-admin-tab {{if not .unreadOnly}}is-active{{end}}">All</a>
+                <a href="/admin/registrations?show=unread" class="parish-admin-tab {{if .unreadOnly}}is-active{{end}}">Unread only</a>
+            </div>
+        </header>
+
+        <section class="parish-admin-panel">
+            {{if .registrations}}
+            <ul class="parish-admin-message-list" id="registration-list">
+                {{range .registrations}}
+                <li class="parish-admin-message {{if not .ReadAt}}is-unread{{end}}" data-row-id="{{.ID}}">
+                    <div class="parish-admin-message-head">
+                        <strong>{{.DisplayName}}</strong>
+                        <span class="parish-admin-message-subject">{{.IntentLabel}}</span>
+                        <span class="parish-admin-message-time">{{.CreatedAt.Format "Mon Jan 2, 3:04 PM"}}</span>
+                    </div>
+                    <div class="parish-admin-message-contact">
+                        {{if .HeadEmail}}<a href="mailto:{{.HeadEmail}}">{{.HeadEmail}}</a>{{end}}
+                        {{if and .HeadEmail .HeadPhone}} &middot; {{end}}
+                        {{if .HeadPhone}}<a href="tel:{{.HeadPhone}}">{{.HeadPhone}}</a>{{end}}
+                    </div>
+                    <div class="parish-admin-reg-grid">
+                        <div>
+                            <h4>Address</h4>
+                            <p>{{.Address1}}{{if .Address2}}<br>{{.Address2}}{{end}}<br>{{.City}}, {{.State}} {{.PostalCode}}</p>
+                        </div>
+                        {{if or .SpouseFirstName .SpouseLastName}}
+                        <div>
+                            <h4>Spouse</h4>
+                            <p>{{.SpouseFirstName}} {{.SpouseLastName}}
+                                {{if .SpouseEmail}}<br><a href="mailto:{{.SpouseEmail}}">{{.SpouseEmail}}</a>{{end}}
+                                {{if .SpousePhone}}<br><a href="tel:{{.SpousePhone}}">{{.SpousePhone}}</a>{{end}}
+                            </p>
+                        </div>
+                        {{end}}
+                        {{if .HouseholdMembers}}
+                        <div>
+                            <h4>Other household members</h4>
+                            <p style="white-space: pre-wrap;">{{.HouseholdMembers}}</p>
+                        </div>
+                        {{end}}
+                        <div>
+                            <h4>Preferences</h4>
+                            <p>
+                                Primary church: {{if .PrimaryChurch}}{{churchLabel .PrimaryChurch}}{{else}}no preference{{end}}<br>
+                                Envelopes: {{if .WantsEnvelopes}}Yes{{if .EnvelopeNumber}} (#{{.EnvelopeNumber}}){{end}}{{else}}No{{end}}<br>
+                                {{if .ContactPreferences}}Contact: {{.ContactPreferences}}{{end}}
+                            </p>
+                        </div>
+                    </div>
+                    {{if .Notes}}
+                    <div class="parish-admin-reg-notes">
+                        <h4>Notes</h4>
+                        <p style="white-space: pre-wrap;">{{.Notes}}</p>
+                    </div>
+                    {{end}}
+                    <div class="parish-admin-message-actions">
+                        <button type="button" class="parish-admin-link" data-action="toggle-read" data-read="{{if .ReadAt}}false{{else}}true{{end}}">
+                            {{if .ReadAt}}Mark unread{{else}}Mark read{{end}}
+                        </button>
+                        <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-registration">Delete</button>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-admin-empty">No registrations yet.</p>
+            {{end}}
+        </section>
+    </main>
+</div>
+{{end}}

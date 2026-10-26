@@ -1,0 +1,137 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{with .title}}{{.}}{{else}}Our Lady of the Valley Parish{{end}}</title>
+    <meta name="description" content="Our Lady of the Valley Parish — St. Ann's in Hornell and St. Mary's in Rexville, Diocese of Rochester.">
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.png">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/main.css?v={{.version}}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-inter parish-body">
+    <!-- Top strip with parish mark + sign-in link -->
+    <div class="parish-strip">
+        <div class="parish-strip-inner">
+            <span class="parish-strip-text">{{with site}}{{.Diocese}}{{end}}</span>
+            <nav class="parish-strip-links" aria-label="Utility">
+                {{if .user}}
+                <a href="/admin" class="parish-strip-link">Admin</a>
+                <button type="button" id="nav-logout" class="parish-strip-link parish-strip-link-btn">Sign out</button>
+                {{else}}
+                <a href="/admin/login" class="parish-strip-link">Staff sign in</a>
+                {{end}}
+            </nav>
+        </div>
+    </div>
+
+    <!-- Primary navigation -->
+    <header class="parish-nav">
+        <div class="parish-nav-inner">
+            <a href="/" class="parish-brand">
+                <span class="parish-brand-mark" aria-hidden="true">
+                    <i class="fas fa-cross"></i>
+                </span>
+                <span class="parish-brand-text">
+                    <span class="parish-brand-title">{{with site}}{{.ParishName}}{{end}}</span>
+                    <span class="parish-brand-sub">St. Ann, Hornell &middot; St. Mary, Rexville</span>
+                </span>
+            </a>
+
+            <nav class="parish-nav-links" aria-label="Primary">
+                {{range nav}}
+                <a href="{{.Href}}" class="parish-nav-link" {{if .External}}target="_blank" rel="noopener"{{end}}>{{.Label}}</a>
+                {{end}}
+            </nav>
+
+            <button id="mobile-menu-btn" class="parish-nav-menu-btn" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div id="mobile-menu" class="parish-nav-mobile" hidden>
+            {{range nav}}
+            <a href="{{.Href}}" class="parish-nav-mobile-link" {{if .External}}target="_blank" rel="noopener"{{end}}>{{.Label}}</a>
+            {{end}}
+            {{if .user}}
+            <a href="/admin" class="parish-nav-mobile-link">Admin</a>
+            {{else}}
+            <a href="/admin/login" class="parish-nav-mobile-link parish-nav-mobile-link-muted">Staff sign in</a>
+            {{end}}
+        </div>
+    </header>
+
+    <main>
+        {{if eq .page "home"}}{{template "home-content" .}}
+        {{else if eq .page "contact"}}{{template "contact-content" .}}
+        {{else if eq .page "mass-times"}}{{template "mass-times-content" .}}
+        {{else if eq .page "confession-times"}}{{template "confession-times-content" .}}
+        {{else if eq .page "cms"}}{{template "cms-content" .}}
+        {{else if eq .page "parish-registration"}}{{template "parish-registration-content" .}}
+        {{else if eq .page "admin"}}{{template "admin-content" .}}
+        {{else if eq .page "admin-messages"}}{{template "admin-messages-content" .}}
+        {{else if eq .page "admin-registrations"}}{{template "admin-registrations-content" .}}
+        {{else if eq .page "admin-login"}}{{template "admin-login-content" .}}
+        {{else if eq .page "admin-pages"}}{{template "admin-pages-content" .}}
+        {{else if eq .page "admin-page-edit"}}{{template "admin-page-edit-content" .}}
+        {{else if eq .page "admin-mass-times"}}{{template "admin-mass-times-content" .}}
+        {{else if eq .page "admin-confessions"}}{{template "admin-confessions-content" .}}
+        {{else if eq .page "admin-homilies"}}{{template "admin-homilies-content" .}}
+        {{else if eq .page "admin-bulletins"}}{{template "admin-bulletins-content" .}}
+        {{else if eq .page "admin-events"}}{{template "admin-events-content" .}}
+        {{else}}<p class="parish-container parish-section">Page content not found.</p>{{end}}
+    </main>
+
+    <footer class="parish-footer">
+        <div class="parish-footer-inner">
+            <div class="parish-footer-grid">
+                <div class="parish-footer-col">
+                    <h2 class="parish-footer-title">{{with site}}{{.ParishName}}{{end}}</h2>
+                    <p class="parish-footer-text">A Catholic parish in the Diocese of Rochester, serving the communities of Hornell and Rexville, New York.</p>
+                </div>
+                {{with site}}
+                <div class="parish-footer-col">
+                    <h3 class="parish-footer-subtitle">Parish Office</h3>
+                    <address class="parish-footer-address">
+                        <p>{{.OfficeStreet}}</p>
+                        <p>{{.OfficeCity}}</p>
+                        <p><a href="tel:{{.OfficePhone}}">{{.OfficePhone}}</a></p>
+                        <p><a href="mailto:{{.Email}}">{{.Email}}</a></p>
+                    </address>
+                </div>
+                <div class="parish-footer-col">
+                    <h3 class="parish-footer-subtitle">Our Churches</h3>
+                    <ul class="parish-footer-list">
+                        {{range .Locations}}
+                        <li><strong>{{.Name}}</strong><br>{{.Street}}<br>{{.City}}</li>
+                        {{end}}
+                    </ul>
+                </div>
+                <div class="parish-footer-col">
+                    <h3 class="parish-footer-subtitle">Diocese</h3>
+                    <ul class="parish-footer-list">
+                        <li><a href="{{.DioceseURL}}" target="_blank" rel="noopener">{{.Diocese}}</a></li>
+                        <li><a href="https://catholiccourier.com/" target="_blank" rel="noopener">Catholic Courier</a></li>
+                    </ul>
+                </div>
+                {{end}}
+            </div>
+            <div class="parish-footer-bottom">
+                <p>&copy; {{currentYear}} Our Lady of the Valley Parish</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="toast-region" class="parish-toast-region" aria-live="polite"></div>
+
+    <script src="/static/js/main.js?v={{.version}}"></script>
+    {{if or (eq .page "admin") (eq .page "admin-messages") (eq .page "admin-pages") (eq .page "admin-page-edit") (eq .page "admin-mass-times") (eq .page "admin-confessions") (eq .page "admin-homilies") (eq .page "admin-bulletins") (eq .page "admin-events") (eq .page "admin-registrations")}}
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="/static/js/admin.js?v={{.version}}"></script>
+    {{end}}
+</body>
+</html>
+{{end}}

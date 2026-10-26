@@ -1,0 +1,1132 @@
+/* Our Lady of the Valley Parish — base stylesheet.
+   Tailwind utilities are available via CDN; this file carries the
+   parish palette and the components that aren't well-expressed in utilities. */
+
+:root {
+    /* Palette — Marian blue + warm cream + burgundy accent + gold rule. */
+    --parish-navy: #1e3a5f;        /* Marian blue, deep */
+    --parish-blue: #2b5aa0;        /* link / hover */
+    --parish-blue-soft: #e8eef8;   /* nav underline / tinted sections */
+    --parish-cream: #faf7ef;       /* page background */
+    --parish-cream-warm: #f5efe0;  /* card tint */
+    --parish-ink: #1a1a1a;
+    --parish-muted: #5f6b7a;
+    --parish-muted-2: #8a95a3;
+    --parish-rule: #e2ddd0;        /* warm hairline */
+    --parish-gold: #b58b2a;        /* liturgical gold */
+    --parish-burgundy: #8b2f3f;    /* accent for CTAs */
+    --parish-white: #ffffff;
+    --parish-shadow: 0 10px 25px -15px rgba(30, 58, 95, 0.4);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body.parish-body {
+    background: var(--parish-cream);
+    color: var(--parish-ink);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+    margin: 0;
+    line-height: 1.55;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    color: var(--parish-navy);
+    letter-spacing: 0.01em;
+}
+
+a { color: var(--parish-blue); text-decoration: none; }
+a:hover { color: var(--parish-navy); }
+
+/* ---------- Top strip ---------- */
+.parish-strip {
+    background: var(--parish-navy);
+    color: #e8eef8;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.parish-strip-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+}
+.parish-strip-links { display: flex; gap: 1rem; }
+.parish-strip-link {
+    color: #e8eef8;
+    opacity: 0.9;
+    font-weight: 500;
+}
+.parish-strip-link:hover { opacity: 1; color: var(--parish-white); }
+.parish-strip-link-btn {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+}
+
+/* ---------- Primary nav ---------- */
+.parish-nav {
+    background: var(--parish-white);
+    border-bottom: 1px solid var(--parish-rule);
+    box-shadow: 0 4px 10px -8px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+.parish-nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem;
+    gap: 2rem;
+}
+.parish-brand { display: flex; align-items: center; gap: 0.75rem; }
+.parish-brand-mark {
+    width: 2.75rem; height: 2.75rem;
+    border-radius: 999px;
+    background: var(--parish-navy);
+    color: var(--parish-white);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: var(--parish-shadow);
+}
+.parish-brand-text { display: flex; flex-direction: column; }
+.parish-brand-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--parish-navy);
+    line-height: 1.1;
+}
+.parish-brand-sub {
+    font-size: 0.75rem;
+    color: var(--parish-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.parish-nav-links { display: flex; gap: 0.25rem; align-items: center; }
+.parish-nav-link {
+    color: var(--parish-ink);
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    position: relative;
+}
+.parish-nav-link:hover { background: var(--parish-blue-soft); color: var(--parish-navy); }
+.parish-nav-link.is-active { color: var(--parish-navy); }
+.parish-nav-link.is-active::after {
+    content: ""; position: absolute;
+    left: 0.9rem; right: 0.9rem; bottom: 0.1rem;
+    height: 2px; background: var(--parish-gold); border-radius: 2px;
+}
+.parish-nav-menu-btn {
+    display: none;
+    background: var(--parish-blue-soft);
+    border: 0; border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    color: var(--parish-navy);
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+.parish-nav-mobile {
+    display: none;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem 1rem;
+    background: var(--parish-white);
+    border-top: 1px solid var(--parish-rule);
+}
+.parish-nav-mobile[hidden] { display: none !important; }
+.parish-nav-mobile.is-open { display: flex; }
+.parish-nav-mobile-link {
+    padding: 0.75rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--parish-ink);
+    font-weight: 500;
+}
+.parish-nav-mobile-link:hover { background: var(--parish-blue-soft); color: var(--parish-navy); }
+.parish-nav-mobile-link-muted { color: var(--parish-muted); font-size: 0.9rem; }
+
+@media (max-width: 820px) {
+    .parish-nav-links { display: none; }
+    .parish-nav-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+    .parish-brand-sub { display: none; }
+}
+
+/* ---------- Buttons ---------- */
+.parish-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+.parish-btn-primary {
+    background: var(--parish-navy);
+    color: var(--parish-white);
+}
+.parish-btn-primary:hover {
+    background: var(--parish-blue);
+    color: var(--parish-white);
+    box-shadow: var(--parish-shadow);
+}
+.parish-btn-ghost {
+    background: transparent;
+    color: var(--parish-navy);
+    border-color: var(--parish-navy);
+}
+.parish-btn-ghost:hover { background: var(--parish-blue-soft); }
+.parish-btn-wide { width: 100%; justify-content: center; }
+
+/* ---------- Hero ---------- */
+.parish-hero {
+    background: linear-gradient(140deg, var(--parish-navy) 0%, #2a4e82 55%, #3666a3 100%);
+    color: var(--parish-white);
+    padding: 5rem 1rem 6rem;
+    position: relative;
+    overflow: hidden;
+}
+.parish-hero::after {
+    content: "";
+    position: absolute; inset: auto 0 0 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--parish-gold), transparent);
+}
+.parish-hero-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+}
+.parish-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.8rem;
+    color: var(--parish-gold);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.parish-hero-title {
+    font-size: clamp(2.25rem, 5vw, 3.75rem);
+    line-height: 1.1;
+    margin: 0 0 1rem;
+    color: var(--parish-white);
+    font-weight: 600;
+}
+.parish-hero-lede {
+    font-size: 1.15rem;
+    max-width: 42rem;
+    margin: 0 auto 2rem;
+    color: #d8e2f1;
+}
+.parish-hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.parish-hero-actions .parish-btn-primary {
+    background: var(--parish-white);
+    color: var(--parish-navy);
+}
+.parish-hero-actions .parish-btn-primary:hover {
+    background: var(--parish-cream);
+    color: var(--parish-navy);
+}
+.parish-hero-actions .parish-btn-ghost {
+    color: var(--parish-white);
+    border-color: rgba(255,255,255,0.4);
+}
+.parish-hero-actions .parish-btn-ghost:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--parish-white);
+}
+
+/* ---------- Sections ---------- */
+.parish-section { padding: 4rem 1rem; }
+.parish-section-tinted { background: var(--parish-cream-warm); }
+.parish-container { max-width: 1120px; margin: 0 auto; }
+.parish-section-head { text-align: center; margin-bottom: 2.5rem; }
+.parish-section-title {
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    margin: 0;
+    color: var(--parish-navy);
+}
+.parish-two-col {
+    display: grid;
+    gap: 2.5rem;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+}
+@media (max-width: 820px) {
+    .parish-two-col { grid-template-columns: 1fr; }
+}
+
+.parish-prose {
+    color: #2a3340;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 0 0 1rem;
+}
+.parish-prose p { margin: 0 0 1rem; }
+
+/* ---------- Cards ---------- */
+.parish-card {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.75rem;
+    padding: 1.75rem;
+    box-shadow: 0 4px 14px -10px rgba(30,58,95,0.2);
+}
+.parish-card-title {
+    font-size: 1.5rem;
+    margin: 0 0 1rem;
+    color: var(--parish-navy);
+}
+.parish-card-accent {
+    background: var(--parish-cream-warm);
+    border-color: var(--parish-gold);
+    border-left-width: 4px;
+}
+.parish-card-soft {
+    background: var(--parish-blue-soft);
+    border-color: var(--parish-blue-soft);
+}
+.parish-card-note {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--parish-muted);
+    font-style: italic;
+}
+
+/* ---------- Mass times list ---------- */
+.parish-mass-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 980px) { .parish-mass-grid { grid-template-columns: 1fr; } }
+.parish-mass-list { list-style: none; padding: 0; margin: 0; }
+.parish-mass-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed var(--parish-rule);
+}
+.parish-mass-list li:last-child { border-bottom: 0; }
+.parish-mass-list span { color: var(--parish-muted); font-size: 0.9rem; }
+.parish-mass-list strong { color: var(--parish-navy); font-weight: 600; }
+
+/* ---------- Forms ---------- */
+.parish-form { display: flex; flex-direction: column; gap: 1rem; max-width: 540px; }
+.parish-form-row { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+@media (max-width: 540px) { .parish-form-row { grid-template-columns: 1fr; } }
+.parish-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.parish-field label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--parish-navy);
+}
+.parish-field-optional { color: var(--parish-muted-2); font-weight: 400; }
+.parish-field input, .parish-field textarea, .parish-field select {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    font: inherit;
+    color: var(--parish-ink);
+    background: var(--parish-white);
+}
+.parish-field input:focus, .parish-field textarea:focus, .parish-field select:focus {
+    outline: 2px solid var(--parish-blue);
+    outline-offset: 1px;
+    border-color: var(--parish-blue);
+}
+.parish-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px; height: 1px;
+    overflow: hidden;
+}
+.parish-form-error {
+    background: #fdeaec;
+    border: 1px solid #f4b5bc;
+    color: var(--parish-burgundy);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    margin: 0;
+}
+.parish-form-success {
+    background: #e8f3ec;
+    border: 1px solid #b7dcc4;
+    color: #205c37;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    margin: 0;
+}
+.parish-contact-details {
+    margin: 1.5rem 0;
+    color: var(--parish-muted);
+}
+.parish-contact-details p { margin: 0.4rem 0; }
+.parish-contact-details i { color: var(--parish-blue); margin-right: 0.4rem; }
+
+/* ---------- Admin login ---------- */
+.parish-login-section { min-height: 60vh; display: grid; place-items: center; padding: 3rem 1rem; }
+.parish-login-card {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 1rem;
+    padding: 2.5rem;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px -30px rgba(30,58,95,0.4);
+}
+.parish-login-head { text-align: center; margin-bottom: 1.5rem; }
+.parish-login-head h1 { font-size: 1.75rem; margin: 1rem 0 0.25rem; }
+.parish-login-head p { color: var(--parish-muted); font-size: 0.9rem; margin: 0; }
+.parish-login-mark { margin: 0 auto; }
+
+/* ---------- Admin shell ---------- */
+.parish-admin-shell {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - 160px);
+}
+@media (max-width: 820px) {
+    .parish-admin-shell { grid-template-columns: 1fr; }
+}
+.parish-admin-sidebar {
+    background: var(--parish-navy);
+    color: #d8e2f1;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+}
+.parish-admin-sidebar-head { padding: 0 0.5rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.parish-admin-sidebar-eyebrow {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--parish-gold);
+    margin: 0;
+}
+.parish-admin-sidebar-user { margin: 0.25rem 0 0; color: var(--parish-white); font-weight: 600; }
+.parish-admin-sidebar-nav { display: flex; flex-direction: column; gap: 0.25rem; margin: 1rem 0; flex: 1; }
+.parish-admin-sidebar-section {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: var(--parish-muted-2);
+    padding: 1rem 0.75rem 0.5rem;
+}
+.parish-admin-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.4rem;
+    color: #d8e2f1;
+    font-size: 0.95rem;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    width: 100%;
+    font: inherit;
+}
+.parish-admin-sidebar-link:hover { background: rgba(255,255,255,0.08); color: var(--parish-white); }
+.parish-admin-sidebar-link.is-active { background: rgba(255,255,255,0.14); color: var(--parish-white); }
+.parish-admin-sidebar-link.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.parish-admin-sidebar-link.is-disabled:hover { background: transparent; color: #d8e2f1; }
+.parish-admin-sidebar-link-btn { font: inherit; }
+.parish-admin-sidebar-foot {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.parish-admin-badge {
+    margin-left: auto;
+    background: var(--parish-burgundy);
+    color: var(--parish-white);
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.parish-admin-main { padding: 2rem; background: var(--parish-cream); }
+.parish-admin-head { margin-bottom: 2rem; }
+.parish-admin-head h1 { margin: 0; }
+.parish-admin-subtitle { color: var(--parish-muted); margin: 0.25rem 0 1rem; }
+.parish-admin-tabs { display: flex; gap: 0.25rem; }
+.parish-admin-tab {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    color: var(--parish-muted);
+    font-size: 0.9rem;
+    background: transparent;
+    font-weight: 500;
+}
+.parish-admin-tab:hover { background: var(--parish-blue-soft); color: var(--parish-navy); }
+.parish-admin-tab.is-active { background: var(--parish-navy); color: var(--parish-white); }
+
+.parish-admin-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+@media (max-width: 820px) { .parish-admin-stats { grid-template-columns: 1fr; } }
+.parish-admin-stat {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+}
+.parish-admin-stat-label {
+    display: block;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--parish-muted);
+}
+.parish-admin-stat-value {
+    display: block;
+    font-size: 2.25rem;
+    font-weight: 600;
+    color: var(--parish-navy);
+    margin-top: 0.25rem;
+    font-family: 'Cormorant Garamond', serif;
+}
+
+.parish-admin-panel {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+.parish-admin-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.parish-admin-panel-head h2 { margin: 0; font-size: 1.4rem; }
+.parish-admin-link {
+    color: var(--parish-blue);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 500;
+}
+.parish-admin-link:hover { color: var(--parish-navy); text-decoration: underline; }
+.parish-admin-link-danger { color: var(--parish-burgundy); }
+.parish-admin-link-danger:hover { color: var(--parish-burgundy); }
+
+.parish-admin-message-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem; }
+.parish-admin-message {
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--parish-cream);
+}
+.parish-admin-message.is-unread {
+    background: var(--parish-white);
+    border-left: 3px solid var(--parish-burgundy);
+}
+.parish-admin-message-head {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+.parish-admin-message-subject {
+    background: var(--parish-blue-soft);
+    color: var(--parish-navy);
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+}
+.parish-admin-message-time { color: var(--parish-muted); font-size: 0.85rem; margin-left: auto; }
+.parish-admin-message-contact { font-size: 0.9rem; color: var(--parish-muted); margin-bottom: 0.5rem; }
+.parish-admin-message-body {
+    white-space: pre-wrap;
+    color: var(--parish-ink);
+    margin: 0.5rem 0;
+    line-height: 1.6;
+}
+.parish-admin-message-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--parish-rule);
+}
+.parish-admin-empty { color: var(--parish-muted); text-align: center; padding: 2rem; margin: 0; }
+
+/* ---------- Footer ---------- */
+.parish-footer {
+    background: var(--parish-navy);
+    color: #d8e2f1;
+    padding: 3.5rem 1rem 2rem;
+    margin-top: 2rem;
+}
+.parish-footer-inner { max-width: 1200px; margin: 0 auto; }
+.parish-footer-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+}
+@media (max-width: 820px) { .parish-footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 540px) { .parish-footer-grid { grid-template-columns: 1fr; } }
+.parish-footer-title {
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--parish-white);
+    font-size: 1.5rem;
+    margin: 0 0 0.75rem;
+}
+.parish-footer-subtitle {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    color: var(--parish-gold);
+    margin: 0 0 0.75rem;
+}
+.parish-footer-text { color: #d8e2f1; margin: 0; line-height: 1.6; }
+.parish-footer-address p, .parish-footer-list li {
+    margin: 0.25rem 0;
+    font-style: normal;
+}
+.parish-footer-list { list-style: none; padding: 0; }
+.parish-footer a { color: #d8e2f1; }
+.parish-footer a:hover { color: var(--parish-white); }
+.parish-footer-bottom {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--parish-muted-2);
+}
+
+/* ---------- Catholic Courier list ---------- */
+.parish-courier-list { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+.parish-courier-list li {
+    padding: 1rem 0;
+    border-bottom: 1px dashed var(--parish-rule);
+}
+.parish-courier-list li:last-child { border-bottom: 0; }
+.parish-courier-list a { display: flex; flex-direction: column; gap: 0.25rem; color: var(--parish-navy); }
+.parish-courier-list a:hover strong { text-decoration: underline; }
+.parish-courier-list strong { font-weight: 600; }
+.parish-courier-meta { font-size: 0.85rem; color: var(--parish-muted); }
+
+/* ---------- CMS page body (block-rendered) ---------- */
+.parish-cms-body > * + * { margin-top: 1.5rem; }
+.parish-cms-body p { line-height: 1.7; color: var(--parish-ink); margin: 0 0 1rem; }
+.parish-cms-body ul, .parish-cms-body ol { padding-left: 1.5rem; line-height: 1.7; }
+
+/* Block-level classes emitted by RenderBlocks */
+.parish-block-heading { margin: 2rem 0 0.75rem; color: var(--parish-navy); }
+.parish-block-heading-2 { font-size: 1.75rem; }
+.parish-block-heading-3 { font-size: 1.4rem; }
+.parish-block-heading-4 { font-size: 1.15rem; }
+.parish-block-rich { line-height: 1.7; color: var(--parish-ink); }
+.parish-block-rich p { margin: 0 0 1rem; }
+.parish-block-rich a { text-decoration: underline; }
+.parish-block-divider {
+    border: 0;
+    border-top: 1px solid var(--parish-rule);
+    margin: 2.5rem auto;
+    max-width: 200px;
+}
+.parish-block-image { margin: 2rem 0; }
+.parish-block-image img { max-width: 100%; height: auto; border-radius: 0.5rem; display: block; }
+.parish-block-image-small img { max-width: 320px; }
+.parish-block-image-medium img { max-width: 640px; margin: 0 auto; }
+.parish-block-image-wide img { max-width: 100%; }
+.parish-block-image figcaption {
+    font-size: 0.85rem;
+    color: var(--parish-muted);
+    text-align: center;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+.parish-block-image-row {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin: 2rem 0;
+}
+.parish-block-image-row img { width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
+.parish-block-pdf a {
+    display: inline-flex; gap: 0.5rem; align-items: center;
+    color: var(--parish-burgundy);
+    font-weight: 500;
+}
+.parish-block-video {
+    position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;
+    margin: 2rem 0; border-radius: 0.5rem;
+}
+.parish-block-video iframe {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; border: 0;
+}
+.parish-block-cta { margin: 2rem 0; }
+.parish-block-event-list, .parish-block-bulletin-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+.parish-block-event-list li, .parish-block-bulletin-list li {
+    padding: 0.75rem 0; border-bottom: 1px dashed var(--parish-rule);
+}
+.parish-block-event-list a, .parish-block-bulletin-list a {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 1rem; color: var(--parish-navy);
+}
+.parish-block-event-list time, .parish-block-bulletin-list time {
+    color: var(--parish-muted); font-size: 0.9rem;
+}
+.parish-block-staff-grid {
+    display: grid; gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 1.5rem 0;
+}
+.parish-staff-card {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+.parish-staff-photo {
+    width: 120px; height: 120px; border-radius: 999px; object-fit: cover;
+    margin: 0 auto 1rem;
+}
+.parish-staff-card h3 { margin: 0 0 0.25rem; font-size: 1.2rem; }
+.parish-staff-role { color: var(--parish-muted); font-size: 0.9rem; margin: 0 0 0.5rem; }
+
+/* ---------- Admin tables (Mass times, confessions, pages) ---------- */
+.parish-admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+.parish-admin-table thead th {
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--parish-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--parish-rule);
+}
+.parish-admin-table tbody td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--parish-rule);
+    vertical-align: middle;
+}
+.parish-admin-table tbody tr.parish-admin-row-ok {
+    background: #e8f3ec;
+    transition: background 0.4s ease;
+}
+.parish-admin-table input,
+.parish-admin-table select {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.35rem;
+    font: inherit;
+    background: var(--parish-white);
+    width: 100%;
+    max-width: 220px;
+}
+.parish-admin-drag-handle {
+    width: 1.5rem;
+    color: var(--parish-muted-2);
+    cursor: grab;
+    user-select: none;
+}
+.parish-admin-table-add {
+    margin-top: 1rem;
+}
+.parish-admin-row-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    white-space: nowrap;
+}
+.parish-admin-badge-ok {
+    background: #d8ebdd;
+    color: #205c37;
+    font-size: 0.72rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+.parish-admin-badge-draft {
+    background: var(--parish-cream-warm);
+    color: var(--parish-muted);
+    font-size: 0.72rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+.parish-admin-head-action { margin-top: 0.5rem; }
+
+/* ---------- Admin modal ---------- */
+.parish-admin-modal {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem; z-index: 70;
+}
+.parish-admin-modal[hidden] { display: none; }
+.parish-admin-modal-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(30, 58, 95, 0.5);
+}
+.parish-admin-modal-panel {
+    position: relative;
+    background: var(--parish-white);
+    border-radius: 0.75rem;
+    padding: 1.75rem;
+    width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px -20px rgba(30, 58, 95, 0.4);
+}
+.parish-admin-modal-wide { max-width: 720px; }
+.parish-admin-modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem;
+}
+.parish-admin-modal-head h2 { margin: 0; font-size: 1.4rem; }
+.parish-admin-modal-close {
+    background: none; border: 0; cursor: pointer;
+    color: var(--parish-muted); font-size: 1.1rem;
+    padding: 0.25rem 0.5rem;
+}
+.parish-admin-modal-close:hover { color: var(--parish-navy); }
+.parish-admin-modal-actions {
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* ---------- Block editor ---------- */
+.parish-admin-main-editor { max-width: 900px; }
+.parish-editor-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 1rem; flex-wrap: wrap;
+}
+.parish-editor-head-actions { display: flex; gap: 0.75rem; }
+.parish-editor-head h1 {
+    outline: none;
+    border-bottom: 2px dashed transparent;
+    transition: border-color 0.2s;
+}
+.parish-editor-head h1:focus { border-bottom-color: var(--parish-gold); }
+.parish-editor-inline-input {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px dashed var(--parish-rule);
+    padding: 0.1rem 0.25rem;
+    font: inherit;
+    color: var(--parish-muted);
+    max-width: 200px;
+}
+.parish-editor-inline-input:focus { outline: none; border-bottom-color: var(--parish-gold); }
+.parish-editor-status {
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    background: var(--parish-cream-warm);
+    color: var(--parish-muted);
+    margin: 0 0 1rem;
+}
+.parish-editor-status-ok { background: #e8f3ec; color: #205c37; }
+.parish-editor-status-error { background: #fdeaec; color: var(--parish-burgundy); }
+
+.parish-editor-blocks {
+    display: flex; flex-direction: column; gap: 1rem;
+    min-height: 120px;
+}
+.parish-editor-block {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+.parish-editor-block-ghost {
+    opacity: 0.4;
+    background: var(--parish-cream-warm);
+}
+.parish-editor-block-head {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: var(--parish-cream);
+    border-bottom: 1px solid var(--parish-rule);
+}
+.parish-editor-block-handle {
+    cursor: grab;
+    color: var(--parish-muted-2);
+}
+.parish-editor-block-handle:active { cursor: grabbing; }
+.parish-editor-block-type {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--parish-navy);
+}
+.parish-editor-block-type i { margin-right: 0.4rem; color: var(--parish-gold); }
+.parish-editor-block-remove {
+    background: none; border: 0; cursor: pointer;
+    color: var(--parish-muted); font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+}
+.parish-editor-block-remove:hover { color: var(--parish-burgundy); }
+.parish-editor-block-body { padding: 1rem; }
+.parish-editor-add {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+.parish-block-fields {
+    display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;
+}
+.parish-block-fields > label {
+    display: flex; flex-direction: column; gap: 0.3rem;
+    font-size: 0.8rem; color: var(--parish-muted);
+    font-weight: 500;
+}
+.parish-block-fields input,
+.parish-block-fields select,
+.parish-block-fields textarea {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.4rem;
+    font: inherit;
+    color: var(--parish-ink);
+    background: var(--parish-white);
+    min-width: 200px;
+}
+.parish-block-fields textarea { min-width: 100%; min-height: 100px; font-family: inherit; }
+.parish-block-fields-grow { flex: 1 1 240px; }
+.parish-block-fields-stack {
+    display: flex; flex-direction: column; gap: 0.5rem; flex: 1;
+}
+.parish-block-asset-preview {
+    width: 150px; height: 100px;
+    background: var(--parish-cream-warm);
+    border: 1px dashed var(--parish-rule);
+    border-radius: 0.4rem;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.parish-block-asset-preview img { max-width: 100%; max-height: 100%; object-fit: cover; }
+.parish-block-asset-empty, .parish-block-asset-filename {
+    font-size: 0.8rem;
+    color: var(--parish-muted);
+    text-align: center;
+    padding: 0.5rem;
+}
+
+/* ---------- Block palette ---------- */
+.parish-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+.parish-palette-item {
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    padding: 1rem 0.75rem;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    cursor: pointer;
+    font: inherit;
+    color: var(--parish-navy);
+    transition: all 0.15s ease;
+}
+.parish-palette-item:hover {
+    border-color: var(--parish-blue);
+    background: var(--parish-blue-soft);
+}
+.parish-palette-item i {
+    font-size: 1.5rem;
+    color: var(--parish-gold);
+}
+
+/* ---------- Asset picker ---------- */
+.parish-asset-picker-upload {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--parish-rule);
+    margin-bottom: 1rem;
+}
+.parish-asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+.parish-asset-card {
+    background: var(--parish-cream);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.4rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    font: inherit;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+.parish-asset-card:hover {
+    border-color: var(--parish-blue);
+    background: var(--parish-blue-soft);
+}
+.parish-asset-card img {
+    width: 100%; height: 100px; object-fit: cover; border-radius: 0.3rem;
+}
+.parish-asset-card-filetype {
+    font-size: 2.5rem;
+    color: var(--parish-burgundy);
+    height: 100px;
+    display: flex; align-items: center; justify-content: center;
+}
+.parish-asset-card-name {
+    font-size: 0.75rem;
+    color: var(--parish-muted);
+    word-break: break-word;
+    max-height: 2.4em;
+    overflow: hidden;
+}
+
+/* ---------- Form fieldsets (parish registration) ---------- */
+.parish-fieldset {
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin: 0 0 1.5rem;
+    background: var(--parish-white);
+}
+.parish-fieldset legend {
+    padding: 0 0.5rem;
+    font-weight: 600;
+    color: var(--parish-navy);
+    font-size: 0.95rem;
+}
+.parish-fieldset-inline {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    border: 0;
+    padding: 0.25rem 0;
+    margin-top: 0.5rem;
+}
+.parish-fieldset-inline legend {
+    padding: 0;
+    font-size: 0.8rem;
+    color: var(--parish-muted);
+    font-weight: 500;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+.parish-fieldset-inline label {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--parish-ink);
+}
+
+/* ---------- Admin registration cards ---------- */
+.parish-admin-reg-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 1rem 0 0.5rem;
+    padding: 1rem 0;
+    border-top: 1px dashed var(--parish-rule);
+}
+.parish-admin-reg-grid h4 {
+    margin: 0 0 0.25rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--parish-muted);
+}
+.parish-admin-reg-grid p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--parish-ink);
+}
+.parish-admin-reg-notes {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--parish-rule);
+}
+.parish-admin-reg-notes h4 {
+    margin: 0 0 0.25rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--parish-muted);
+}
+.parish-admin-reg-notes p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--parish-ink);
+}
+
+/* ---------- Toast ---------- */
+.parish-toast-region {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 100;
+}
+.parish-toast {
+    background: var(--parish-navy);
+    color: var(--parish-white);
+    padding: 0.6rem 1rem;
+    border-radius: 0.4rem;
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
+    font-size: 0.9rem;
+    transition: opacity 0.3s;
+}
+.parish-toast-ok { background: #205c37; }
+.parish-toast-error { background: var(--parish-burgundy); }
+.parish-toast-leaving { opacity: 0; }

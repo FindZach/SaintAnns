@@ -1,0 +1,97 @@
+{{define "admin-events.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-events-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Events</h1>
+            <p class="parish-admin-subtitle">Parish calendar entries. Featured events show on the home page's event list block.</p>
+            <button type="button" id="new-event-btn" class="parish-btn parish-btn-primary parish-admin-head-action">
+                <i class="fas fa-plus"></i> New event
+            </button>
+        </header>
+
+        <section class="parish-admin-panel">
+            {{if .events}}
+            <ul class="parish-admin-message-list" id="event-list">
+                {{range .events}}
+                <li class="parish-admin-message" data-row-id="{{.ID}}">
+                    <div class="parish-admin-message-head">
+                        <strong>{{.Title}}</strong>
+                        <span class="parish-admin-message-subject">{{.StartsAt.Format "Mon Jan 2, 3:04 PM"}}</span>
+                        {{if .Featured}}<span class="parish-admin-badge parish-admin-badge-ok">Featured</span>{{end}}
+                    </div>
+                    {{if .Location}}<p class="parish-admin-message-contact"><i class="fas fa-map-marker-alt"></i> {{.Location}}</p>{{end}}
+                    {{if .Body}}<p class="parish-admin-message-body">{{.Body}}</p>{{end}}
+                    <div class="parish-admin-message-actions">
+                        <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-event">Delete</button>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-admin-empty">No events yet.</p>
+            {{end}}
+        </section>
+
+        <!-- New event modal -->
+        <div id="new-event-modal" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel parish-admin-modal-wide" role="dialog" aria-modal="true" aria-labelledby="new-event-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="new-event-title">New event</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </header>
+                <form id="new-event-form" class="parish-form">
+                    <div class="parish-form-row">
+                        <div class="parish-field">
+                            <label for="event-slug">Slug</label>
+                            <input type="text" id="event-slug" name="slug" placeholder="advent-mission-2026" required>
+                        </div>
+                        <div class="parish-field">
+                            <label for="event-tag">Tag <span class="parish-field-optional">(optional)</span></label>
+                            <input type="text" id="event-tag" name="tag" placeholder="faith-formation">
+                        </div>
+                    </div>
+                    <div class="parish-field">
+                        <label for="event-title-input">Title</label>
+                        <input type="text" id="event-title-input" name="title" required>
+                    </div>
+                    <div class="parish-form-row">
+                        <div class="parish-field">
+                            <label for="event-starts-at">Starts at</label>
+                            <input type="datetime-local" id="event-starts-at" name="starts_at" required>
+                        </div>
+                        <div class="parish-field">
+                            <label for="event-ends-at">Ends at <span class="parish-field-optional">(optional)</span></label>
+                            <input type="datetime-local" id="event-ends-at" name="ends_at">
+                        </div>
+                    </div>
+                    <div class="parish-field">
+                        <label for="event-location">Location</label>
+                        <input type="text" id="event-location" name="location" placeholder="St. Ann's Hall">
+                    </div>
+                    <div class="parish-field">
+                        <label for="event-body">Description</label>
+                        <textarea id="event-body" name="body" rows="4"></textarea>
+                    </div>
+                    <div class="parish-field">
+                        <label>
+                            <input type="checkbox" id="event-featured" name="featured">
+                            Feature on home page event list
+                        </label>
+                    </div>
+                    <p id="new-event-error" class="parish-form-error" role="alert" hidden></p>
+                    <div class="parish-admin-modal-actions">
+                        <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
+                        <button type="submit" class="parish-btn parish-btn-primary">Create event</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{{end}}

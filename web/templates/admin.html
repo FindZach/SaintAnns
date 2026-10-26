@@ -1,0 +1,100 @@
+{{define "admin.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-sidebar"}}
+<aside class="parish-admin-sidebar">
+    <div class="parish-admin-sidebar-head">
+        <p class="parish-admin-sidebar-eyebrow">Admin</p>
+        <p class="parish-admin-sidebar-user">{{with .user}}{{.FirstName}} {{.LastName}}{{end}}</p>
+    </div>
+    <nav class="parish-admin-sidebar-nav">
+        <a href="/admin" class="parish-admin-sidebar-link {{if eq .page "admin"}}is-active{{end}}">
+            <i class="fas fa-gauge"></i> Dashboard
+        </a>
+        <a href="/admin/messages" class="parish-admin-sidebar-link {{if eq .page "admin-messages"}}is-active{{end}}">
+            <i class="fas fa-envelope"></i> Messages
+            {{if gt .unreadMessages 0}}<span class="parish-admin-badge">{{.unreadMessages}}</span>{{end}}
+        </a>
+        <a href="/admin/registrations" class="parish-admin-sidebar-link {{if eq .page "admin-registrations"}}is-active{{end}}">
+            <i class="fas fa-user-plus"></i> Registrations
+        </a>
+        <div class="parish-admin-sidebar-section">Content</div>
+        <a href="/admin/pages" class="parish-admin-sidebar-link {{if or (eq .page "admin-pages") (eq .page "admin-page-edit")}}is-active{{end}}">
+            <i class="fas fa-file-lines"></i> Pages
+        </a>
+        <a href="/admin/homilies" class="parish-admin-sidebar-link {{if eq .page "admin-homilies"}}is-active{{end}}">
+            <i class="fas fa-microphone"></i> Homilies
+        </a>
+        <a href="/admin/bulletins" class="parish-admin-sidebar-link {{if eq .page "admin-bulletins"}}is-active{{end}}">
+            <i class="fas fa-file-pdf"></i> Bulletins
+        </a>
+        <a href="/admin/events" class="parish-admin-sidebar-link {{if eq .page "admin-events"}}is-active{{end}}">
+            <i class="fas fa-calendar"></i> Events
+        </a>
+        <div class="parish-admin-sidebar-section">Schedule</div>
+        <a href="/admin/mass-times" class="parish-admin-sidebar-link {{if eq .page "admin-mass-times"}}is-active{{end}}">
+            <i class="fas fa-church"></i> Mass Times
+        </a>
+        <a href="/admin/confessions" class="parish-admin-sidebar-link {{if eq .page "admin-confessions"}}is-active{{end}}">
+            <i class="fas fa-dove"></i> Confessions
+        </a>
+    </nav>
+    <div class="parish-admin-sidebar-foot">
+        <a href="/" class="parish-admin-sidebar-link">
+            <i class="fas fa-arrow-left"></i> Back to site
+        </a>
+        <button type="button" id="nav-logout" class="parish-admin-sidebar-link parish-admin-sidebar-link-btn">
+            <i class="fas fa-sign-out-alt"></i> Sign out
+        </button>
+    </div>
+</aside>
+{{end}}
+
+{{define "admin-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Dashboard</h1>
+            <p class="parish-admin-subtitle">Overview of recent activity.</p>
+        </header>
+
+        <div class="parish-admin-stats">
+            <div class="parish-admin-stat">
+                <span class="parish-admin-stat-label">Messages (30 days)</span>
+                <span class="parish-admin-stat-value">{{.stats.MessagesLast30}}</span>
+            </div>
+            <div class="parish-admin-stat">
+                <span class="parish-admin-stat-label">Unread messages</span>
+                <span class="parish-admin-stat-value">{{.stats.UnreadMessages}}</span>
+            </div>
+            <div class="parish-admin-stat">
+                <span class="parish-admin-stat-label">Staff accounts</span>
+                <span class="parish-admin-stat-value">{{.stats.Staff}}</span>
+            </div>
+        </div>
+
+        <section class="parish-admin-panel">
+            <header class="parish-admin-panel-head">
+                <h2>Recent messages</h2>
+                <a href="/admin/messages" class="parish-admin-link">View all</a>
+            </header>
+            {{if .messages}}
+            <ul class="parish-admin-message-list">
+                {{range .messages}}
+                <li class="parish-admin-message">
+                    <div class="parish-admin-message-head">
+                        <strong>{{.FirstName}} {{.LastName}}</strong>
+                        <span class="parish-admin-message-subject">{{.Subject}}</span>
+                        <span class="parish-admin-message-time">{{.CreatedAt.Format "Jan 2, 3:04 PM"}}</span>
+                    </div>
+                    <p class="parish-admin-message-body">{{.Message}}</p>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-admin-empty">No messages yet. When the Contact form is submitted, messages appear here.</p>
+            {{end}}
+        </section>
+    </main>
+</div>
+{{end}}

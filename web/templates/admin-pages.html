@@ -1,0 +1,92 @@
+{{define "admin-pages.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-pages-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Pages</h1>
+            <p class="parish-admin-subtitle">CMS-managed pages. Click a row to open the block editor, or create a new page.</p>
+            <button type="button" id="new-page-btn" class="parish-btn parish-btn-primary parish-admin-head-action">
+                <i class="fas fa-plus"></i> New page
+            </button>
+        </header>
+
+        <section class="parish-admin-panel">
+            {{if .pages}}
+            <table class="parish-admin-table">
+                <thead>
+                    <tr>
+                        <th>Slug</th>
+                        <th>Title</th>
+                        <th>Blocks</th>
+                        <th>Published</th>
+                        <th>Updated</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .pages}}
+                    <tr data-page-id="{{.ID}}" data-page-slug="{{.Slug}}">
+                        <td><code>{{.Slug}}</code></td>
+                        <td><a href="/admin/pages/{{.Slug}}" class="parish-admin-link">{{.Title}}</a></td>
+                        <td>{{.BlockCount}}</td>
+                        <td>
+                            {{if .PublishedAt}}
+                            <span class="parish-admin-badge parish-admin-badge-ok">Published</span>
+                            {{else}}
+                            <span class="parish-admin-badge parish-admin-badge-draft">Draft</span>
+                            {{end}}
+                        </td>
+                        <td>{{.UpdatedAt.Format "Jan 2, 2006"}}</td>
+                        <td class="parish-admin-row-actions">
+                            <a href="/{{.Slug}}/" target="_blank" rel="noopener" class="parish-admin-link" title="View public page">
+                                <i class="fas fa-arrow-up-right-from-square"></i>
+                            </a>
+                            <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-page">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <p class="parish-admin-empty">No pages yet. Click "New page" to create one.</p>
+            {{end}}
+        </section>
+
+        <!-- New page modal -->
+        <div id="new-page-modal" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="new-page-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="new-page-title">New page</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </header>
+                <form id="new-page-form" class="parish-form">
+                    <div class="parish-field">
+                        <label for="new-page-slug">Slug <span class="parish-field-optional">(URL path, no leading slash)</span></label>
+                        <input type="text" id="new-page-slug" name="slug" required placeholder="about/mission">
+                    </div>
+                    <div class="parish-field">
+                        <label for="new-page-title-input">Title</label>
+                        <input type="text" id="new-page-title-input" name="title" required placeholder="Our Mission">
+                    </div>
+                    <div class="parish-field">
+                        <label for="new-page-nav-label">Nav label <span class="parish-field-optional">(optional)</span></label>
+                        <input type="text" id="new-page-nav-label" name="nav_label" placeholder="Mission">
+                    </div>
+                    <p id="new-page-error" class="parish-form-error" role="alert" hidden></p>
+                    <div class="parish-admin-modal-actions">
+                        <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
+                        <button type="submit" class="parish-btn parish-btn-primary">Create &amp; edit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{{end}}

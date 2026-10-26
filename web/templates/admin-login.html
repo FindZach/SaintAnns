@@ -1,0 +1,25 @@
+{{define "admin-login.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-login-content"}}
+<section class="parish-section parish-login-section">
+    <div class="parish-login-card">
+        <header class="parish-login-head">
+            <span class="parish-brand-mark parish-login-mark" aria-hidden="true"><i class="fas fa-cross"></i></span>
+            <h1>Staff sign in</h1>
+            <p>Parish staff only. Public visitors don't need an account.</p>
+        </header>
+        <form id="login-form" class="parish-form" novalidate>
+            <div class="parish-field">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" autocomplete="email" required>
+            </div>
+            <div class="parish-field">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+            </div>
+            <p id="login-error" class="parish-form-error" role="alert" hidden></p>
+            <button type="submit" class="parish-btn parish-btn-primary parish-btn-wide">Sign in</button>
+        </form>
+    </div>
+</section>
+{{end}}

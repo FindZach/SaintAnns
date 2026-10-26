@@ -1,0 +1,46 @@
+{{define "admin-messages.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-messages-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Messages</h1>
+            <p class="parish-admin-subtitle">{{.totalMessages}} total {{if gt .unreadMessages 0}}&middot; {{.unreadMessages}} unread{{end}}</p>
+            <div class="parish-admin-tabs">
+                <a href="/admin/messages" class="parish-admin-tab {{if not .unreadOnly}}is-active{{end}}">All</a>
+                <a href="/admin/messages?show=unread" class="parish-admin-tab {{if .unreadOnly}}is-active{{end}}">Unread only</a>
+            </div>
+        </header>
+
+        <section class="parish-admin-panel">
+            {{if .messages}}
+            <ul class="parish-admin-message-list">
+                {{range .messages}}
+                <li class="parish-admin-message {{if not .ReadAt}}is-unread{{end}}" data-message-id="{{.ID}}">
+                    <div class="parish-admin-message-head">
+                        <strong>{{.FirstName}} {{.LastName}}</strong>
+                        <span class="parish-admin-message-subject">{{.Subject}}</span>
+                        <span class="parish-admin-message-time">{{.CreatedAt.Format "Mon Jan 2, 3:04 PM"}}</span>
+                    </div>
+                    <div class="parish-admin-message-contact">
+                        <a href="mailto:{{.Email}}">{{.Email}}</a>
+                        {{if .Phone}}&middot; <a href="tel:{{.Phone}}">{{.Phone}}</a>{{end}}
+                    </div>
+                    <p class="parish-admin-message-body">{{.Message}}</p>
+                    <div class="parish-admin-message-actions">
+                        <button type="button" class="parish-admin-link" data-action="toggle-read" data-read="{{if .ReadAt}}false{{else}}true{{end}}">
+                            {{if .ReadAt}}Mark unread{{else}}Mark read{{end}}
+                        </button>
+                        <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete">Delete</button>
+                    </div>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="parish-admin-empty">No messages here.</p>
+            {{end}}
+        </section>
+    </main>
+</div>
+{{end}}
