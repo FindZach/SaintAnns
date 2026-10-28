@@ -128,6 +128,7 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 `),
 	}
 
+	// Hero: the modern exterior from the Asset library, if we found one.
 	if heroAssetID != 0 {
 		out = append(out, image(heroAssetID, "St. Ann's Church, Hornell", "St. Ann's Church, 27 Erie Avenue, Hornell — dedicated April 11, 1869.", "wide"))
 	}
@@ -139,6 +140,10 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 <p>Doorley became the first subscriber to the church building fund in 1849, mortgaging his farm to help put a roof over the altar. That same year — after the <strong>Diocese of Buffalo</strong> was established in 1847 and Bishop John Timon appointed <strong>Reverend Michael O'Brien</strong> as first pastor — the parish was formally organized and a first church was built at the northwest corner of Cass and Buffalo Streets.</p>
 <p>Regular weekly Sunday Masses began in <strong>1851</strong> under Reverend Daniel Delacy Moore. That date is the one the parish counts from, which is why 2026 marks the <strong>175th anniversary</strong>.</p>
 `),
+		// Placeholder slot for an early postcard of the first church (Cass & Buffalo).
+		// asset_id=0 means the public page skips it silently; the admin editor shows
+		// it as an asset-picker slot so staff can drop a historic photo in.
+		image(0, "Early photograph of St. Ann's Church", "Upload a historic photograph here — e.g. an early postcard view of St. Ann's.", "wide"),
 
 		heading(2, "A New Church and a Parish School (1860s–1890s)"),
 		rich(`
@@ -146,6 +151,8 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 <p>Father Creedon also founded <strong>St. Ann School</strong> in 1863 — the beginning of Catholic education in Hornell. A larger school building opened in 1890 with capacity for roughly 300 students; a wing was added in 1962. The school served generations of families until it closed for financial reasons in 2012. The parish responded by opening <strong>St. Ann's Academy</strong> in 2013, continuing the educational mission in a new form.</p>
 <p>In <strong>1897</strong> the parish was transferred from the Diocese of Buffalo to the newly expanded <strong>Diocese of Rochester</strong>, where it has remained ever since.</p>
 `),
+		// Placeholder slot for the historic St. Ann's School / Academy postcard.
+		image(0, "St. Ann's School, c. 1910", "Upload a historic photograph of St. Ann's School here — e.g. the 1890 school building postcard.", "wide"),
 
 		heading(2, "A Parish in a Growing City (1910–2000)"),
 		rich(`
@@ -153,6 +160,8 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 <p>In 1998, St. Ann's was clustered with three neighboring parishes: <strong>St. Mary in Rexville</strong>, St. Ignatius Loyola in Hornell, and St. Joachim in Canisteo. In <strong>2004</strong>, those four communities were reorganized into a single parish — <strong>Our Lady of the Valley</strong>. St. Joachim and St. Ignatius Loyola were later closed; the parish today encompasses the historic churches of St. Ann in Hornell and St. Mary in Rexville. A <strong>perpetual adoration chapel</strong> has operated on the St. Ann's campus since 2001.</p>
 <p>In April 2004, a fire — caused by an improperly discarded charcoal incense briquet after Benediction — damaged the sacristy and left smoke damage throughout the church. Masses were temporarily relocated while cleanup proceeded; the historic organ was carefully disassembled and cleaned by hand. In the early 2020s a further round of exterior restoration — brick repointing and steeple work — addressed moisture issues and preserved the building for the next generation.</p>
 `),
+		// Placeholder slot for the Federation Building (NRHP 2001).
+		image(0, "St. Ann's Federation Building, Hornell", "Upload a photograph of the Federation Building here (Otis Dockstader, 1910–1912; added to the National Register of Historic Places in 2001).", "medium"),
 
 		heading(2, "The 175th Jubilee (2025–2026)"),
 		rich(`
@@ -166,6 +175,8 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 </ul>
 <p>Today, Our Lady of the Valley reports about <strong>600 active members</strong>. The Church of St. Ann at <strong>27 Erie Avenue</strong> and St. Mary's in Rexville continue a story that is older than the Diocese of Rochester itself — and, God willing, far from finished.</p>
 `),
+		// Placeholder slot for a Jubilee photo (Bishop's Mass, sand sculpture, etc.).
+		image(0, "175th Jubilee celebration, July 2026", "Upload a Jubilee photograph here — e.g. Bishop Bonnici's Mass, the sand sculpture of the church, or the Webb's Crossing prayer service.", "wide"),
 
 		divider(),
 		rich(`
