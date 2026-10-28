@@ -114,11 +114,12 @@
                     {{if .stAnnPhoto}}
                     <img src="{{.stAnnPhoto.URL}}" alt="St. Ann's Church, Hornell" loading="lazy">
                     {{else}}
-                    <i class="fas fa-church parish-church-photo-placeholder" aria-hidden="true"></i>
+                    {{template "church-glass-placeholder" .}}
                     {{end}}
                 </div>
                 <div class="parish-church-text">
                     <h3 class="parish-church-name">St. Ann's Church</h3>
+                    <p class="parish-church-tagline">Est. 1849 · Dedicated 1869</p>
                     <address class="parish-church-address">
                         27 Erie Avenue<br>
                         Hornell, NY 14843
@@ -133,11 +134,12 @@
                     {{if .stMaryPhoto}}
                     <img src="{{.stMaryPhoto.URL}}" alt="St. Mary's Church, Rexville" loading="lazy">
                     {{else}}
-                    <i class="fas fa-church parish-church-photo-placeholder" aria-hidden="true"></i>
+                    {{template "church-glass-placeholder" .}}
                     {{end}}
                 </div>
                 <div class="parish-church-text">
                     <h3 class="parish-church-name">St. Mary's Church</h3>
+                    <p class="parish-church-tagline">A historic mission church</p>
                     <address class="parish-church-address">
                         Main Street<br>
                         Rexville, NY 14877
@@ -150,6 +152,37 @@
         </div>
     </div>
 </section>
+
+{{define "church-glass-placeholder"}}
+<svg class="parish-church-glass" viewBox="0 0 240 180" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+    <defs>
+        <linearGradient id="pcgsky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1e3a5f"/>
+            <stop offset="1" stop-color="#152a46"/>
+        </linearGradient>
+        <linearGradient id="pcgwindow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#d4af37" stop-opacity="0.9"/>
+            <stop offset="0.5" stop-color="#b8912c" stop-opacity="0.85"/>
+            <stop offset="1" stop-color="#8a6a1e" stop-opacity="0.9"/>
+        </linearGradient>
+    </defs>
+    <rect width="240" height="180" fill="url(#pcgsky)"/>
+    <g opacity="0.95">
+        <rect x="40" y="110" width="160" height="70" fill="#0f1e30"/>
+        <polygon points="40,110 120,55 200,110" fill="#0f1e30"/>
+        <path d="M120 20 L120 55" stroke="#d4af37" stroke-width="2"/>
+        <path d="M112 32 L128 32" stroke="#d4af37" stroke-width="2"/>
+        <path d="M85 95 L85 70 Q85 55 100 55 Q115 55 115 70 L115 95 Z" fill="url(#pcgwindow)" stroke="#faf6ef" stroke-width="1.5" opacity="0.95"/>
+        <path d="M125 95 L125 70 Q125 55 140 55 Q155 55 155 70 L155 95 Z" fill="url(#pcgwindow)" stroke="#faf6ef" stroke-width="1.5" opacity="0.95"/>
+        <line x1="100" y1="60" x2="100" y2="95" stroke="#faf6ef" stroke-width="0.5" opacity="0.6"/>
+        <line x1="140" y1="60" x2="140" y2="95" stroke="#faf6ef" stroke-width="0.5" opacity="0.6"/>
+        <circle cx="120" cy="125" r="12" fill="none" stroke="url(#pcgwindow)" stroke-width="2.5"/>
+        <path d="M120 118 L120 132 M113 125 L127 125" stroke="url(#pcgwindow)" stroke-width="2"/>
+        <rect x="112" y="150" width="16" height="30" fill="#2c1810"/>
+    </g>
+    <text x="120" y="175" text-anchor="middle" fill="#d4af37" opacity="0.5" font-size="7" font-family="Inter,sans-serif" letter-spacing="2">A PHOTOGRAPH CAN BE ADDED HERE</text>
+</svg>
+{{end}}
 
 <section id="about" class="parish-section">
     <div class="parish-container">

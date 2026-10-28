@@ -56,25 +56,27 @@ func (h *PublicHandler) Home(c *gin.Context) {
 	})
 }
 
-// LoadChurchPhotos returns the single best exterior photo for each church,
-// picking the largest-byte-size image whose stored path matches a known
-// church-name pattern. Returns nil for one or both if nothing matches, in
-// which case the template falls back to a placeholder — admins can then
-// upload a photo via /admin/assets.
+// LoadChurchPhotos returns the exterior photo an admin has explicitly tagged
+// for each church. We only match assets whose original_name or alt_text
+// contains an explicit "exterior" marker so we don't accidentally pick a
+// chapel-sign or signage photo that happened to be filed under a church name
+// (the WordPress import left both churches with ambiguous filenames). Until
+// an admin uploads a tagged photo, the template renders a stained-glass SVG
+// placeholder instead.
 func LoadChurchPhotos(db *gorm.DB) (stAnn, stMary *models.Asset) {
 	if db == nil {
 		return nil, nil
 	}
-	stAnn = loadBestAssetMatching(db, []string{"%stannhornell%", "%st-ann%", "%st_ann%"})
-	stMary = loadBestAssetMatching(db, []string{"%stmaryrexville%", "%st-mary%", "%st_mary%"})
+	stAnn = loadTaggedExterior(db, []string{"%stann%exterior%", "%st-ann%exterior%", "%hornell%exterior%"})
+	stMary = loadTaggedExterior(db, []string{"%stmary%exterior%", "%st-mary%exterior%", "%rexville%exterior%"})
 	return stAnn, stMary
 }
 
-func loadBestAssetMatching(db *gorm.DB, patterns []string) *models.Asset {
+func loadTaggedExterior(db *gorm.DB, patterns []string) *models.Asset {
 	for _, pat := range patterns {
 		var a models.Asset
-		q := db.Where("kind = ? AND original_name ILIKE ?", models.AssetImage, pat).
-			Or("kind = ? AND path ILIKE ?", models.AssetImage, pat).
+		q := db.Where("kind = ? AND (original_name ILIKE ? OR alt_text ILIKE ?)",
+			models.AssetImage, pat, pat).
 			Order("byte_size DESC").
 			Limit(1)
 		if err := q.First(&a).Error; err == nil {

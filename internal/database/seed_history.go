@@ -13,29 +13,17 @@ import (
 )
 
 // SeedHistoryPage upserts the /about/our-history/ parish-history page. Idempotent:
-// re-running overwrites the Blocks with the latest canonical body but leaves any
-// manual admin edits to Title / NavLabel / MetaDescription intact.
-//
-// Content is drawn from the Hornell Sun / Catholic Courier / Evening Tribune /
-// WENY coverage of St. Ann's 175th Jubilee, cross-checked against the Diocese of
-// Buffalo's 1847 founding, the Diocese of Rochester's 1897 transfer, and the
-// National Register of Historic Places listing of the St. Ann Federation
-// Building (added 2001).
+// re-running overwrites the Blocks with the latest canonical body. Visual
+// anchors are embedded SVG + styled milestone tiles so the page is visually
+// rich without depending on uploaded photos (which the parish can add later
+// via /admin/pages/about/our-history/).
 func SeedHistoryPage(db *gorm.DB) error {
 	if db == nil {
 		return fmt.Errorf("seed history: no database connection")
 	}
 	log.Println("Seeding parish history page at /about/our-history/ ...")
 
-	// Hero is always a placeholder slot: WordPress filenames don't tell us
-	// which St. Ann image is the church exterior vs. the Perpetual Adoration
-	// Chapel sign, and automatic matches have been wrong. Public page silently
-	// omits the figure until admin opens /admin/pages/about/our-history/,
-	// clicks the hero image slot, and picks a true exterior from the asset
-	// picker (or uploads a new one — public-domain postcards work well).
-	heroAssetID := uint(0)
-
-	blocks := historyBlocks(heroAssetID)
+	blocks := historyBlocks()
 
 	now := time.Now()
 	const slug = "about/our-history"
@@ -54,7 +42,7 @@ func SeedHistoryPage(db *gorm.DB) error {
 		if err := db.Create(&page).Error; err != nil {
 			return fmt.Errorf("seed history: create: %w", err)
 		}
-		log.Printf("Created /about/our-history/ (id=%d, hero_asset=%d)", page.ID, heroAssetID)
+		log.Printf("Created /about/our-history/ (id=%d, %d blocks)", page.ID, len(blocks))
 		return nil
 	}
 	if err != nil {
@@ -76,15 +64,16 @@ func SeedHistoryPage(db *gorm.DB) error {
 	if err := db.Save(&existing).Error; err != nil {
 		return fmt.Errorf("seed history: save: %w", err)
 	}
-	log.Printf("Updated /about/our-history/ (id=%d, hero_asset=%d, %d blocks)", existing.ID, heroAssetID, len(blocks))
+	log.Printf("Updated /about/our-history/ (id=%d, %d blocks)", existing.ID, len(blocks))
 	return nil
 }
 
-
 // historyBlocks is the canonical ordered block list for the history page.
-// Kept here (not in a template) so it round-trips through the admin editor:
-// a staffer can reorder or edit any block and re-save with no code change.
-func historyBlocks(heroAssetID uint) models.Blocks {
+// Visual elements (hero banner, milestone tiles) are embedded as rich_text
+// blocks containing inline SVG and self-contained styles — the page needs no
+// uploaded photos to look complete, but a staffer can still add real
+// photographs via the admin editor at any time.
+func historyBlocks() models.Blocks {
 	heading := func(level int, text string) models.Block {
 		data, _ := json.Marshal(map[string]interface{}{"level": level, "text": text})
 		return models.Block{Type: models.BlockHeading, Data: data}
@@ -93,47 +82,75 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 		data, _ := json.Marshal(map[string]string{"html": strings.TrimSpace(htmlBody)})
 		return models.Block{Type: models.BlockRichText, Data: data}
 	}
-	image := func(assetID uint, alt, caption, size string) models.Block {
-		data, _ := json.Marshal(map[string]interface{}{
-			"asset_id": assetID,
-			"alt":      alt,
-			"caption":  caption,
-			"size":     size,
-		})
-		return models.Block{Type: models.BlockImage, Data: data}
-	}
 	divider := func() models.Block {
 		data, _ := json.Marshal(map[string]string{})
 		return models.Block{Type: models.BlockDivider, Data: data}
 	}
 
-	out := models.Blocks{
+	// Hero banner: inline SVG stained-glass window motif over a deep-navy
+	// gradient, with the 1843–2026 jubilee framing. Styles are inline so no
+	// CSS change is required.
+	hero := rich(`
+<div class="parish-history-hero" style="position:relative;background:linear-gradient(135deg,#1e3a5f 0%,#0f1e30 100%);color:#faf6ef;padding:3.5rem 2rem;margin:1.5rem 0 2.5rem;border-radius:6px;text-align:center;overflow:hidden;box-shadow:0 10px 30px rgba(15,30,48,0.25);">
+    <svg viewBox="0 0 100 140" width="88" height="124" aria-hidden="true" style="display:block;margin:0 auto 1.25rem;opacity:0.95;">
+        <defs>
+            <linearGradient id="olvGlass" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#d4af37"/>
+                <stop offset="1" stop-color="#9c7a1f"/>
+            </linearGradient>
+        </defs>
+        <path d="M50 5 A45 45 0 0 1 95 50 L95 135 L5 135 L5 50 A45 45 0 0 1 50 5 Z" fill="url(#olvGlass)" opacity="0.18"/>
+        <path d="M50 15 A35 35 0 0 1 85 50 L85 125 L15 125 L15 50 A35 35 0 0 1 50 15 Z" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+        <line x1="50" y1="20" x2="50" y2="120" stroke="#d4af37" stroke-width="1"/>
+        <line x1="20" y1="70" x2="80" y2="70" stroke="#d4af37" stroke-width="1"/>
+        <circle cx="50" cy="50" r="7" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+        <path d="M50 43 L50 57 M43 50 L57 50" stroke="#d4af37" stroke-width="1.5"/>
+    </svg>
+    <p style="font-family:'Inter',sans-serif;letter-spacing:0.32em;font-size:0.78rem;margin:0;text-transform:uppercase;opacity:0.85;">Our Lady of the Valley Parish</p>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.25rem,5vw,3.25rem);line-height:1.1;margin:0.5rem 0 0.75rem;font-weight:500;color:#faf6ef;">A History of Faith</h2>
+    <p style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;margin:0;letter-spacing:0.05em;opacity:0.95;">
+        <span style="color:#d4af37;font-weight:600;">1843</span>
+        <span style="margin:0 0.5rem;opacity:0.6;">·</span>
+        <span style="color:#d4af37;font-weight:600;">2026</span>
+    </p>
+    <p style="font-size:0.95rem;margin:0.75rem 0 0;opacity:0.85;">175 Years in the Southern Tier</p>
+</div>
+`)
+
+	// Milestone tile: a small decorative card we drop between sections to
+	// mark a key date. Styles are inline for the same self-containedness.
+	milestone := func(year, title, body string) models.Block {
+		return rich(fmt.Sprintf(`
+<div style="display:flex;gap:1.5rem;align-items:flex-start;background:#faf6ef;border-left:4px solid #d4af37;padding:1.25rem 1.5rem;margin:2rem 0;border-radius:0 4px 4px 0;box-shadow:0 2px 8px rgba(30,58,95,0.08);">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:2.75rem;line-height:1;color:#1e3a5f;font-weight:600;flex-shrink:0;min-width:5rem;">%s</div>
+    <div>
+        <p style="margin:0 0 0.35rem;font-weight:600;color:#1e3a5f;font-size:1.05rem;">%s</p>
+        <p style="margin:0;color:#4a4a4a;line-height:1.55;">%s</p>
+    </div>
+</div>
+`, year, title, body))
+	}
+
+	return models.Blocks{
 		heading(1, "A History of Faith in the Southern Tier"),
 		rich(`
 <p class="parish-prose-lede">For more than 175 years, Catholics in Hornell and the surrounding Southern Tier have gathered to pray, serve, and raise their families in the faith. What began with a single Mass in a farmhouse in 1843 is today Our Lady of the Valley Parish — two historic churches, one community, in the Diocese of Rochester.</p>
 `),
-	}
 
-	// Hero: the modern exterior from the Asset library, if we found a true
-	// exterior shot. If nothing matched, leave a placeholder slot so admin
-	// sees an asset-picker in the editor and can upload the right photo.
-	if heroAssetID != 0 {
-		out = append(out, image(heroAssetID, "St. Ann's Church, Hornell", "St. Ann's Church, 27 Erie Avenue, Hornell — dedicated April 11, 1869.", "wide"))
-	} else {
-		out = append(out, image(0, "St. Ann's Church, Hornell", "Upload an exterior photograph of St. Ann's Church here — the hero image for the history page.", "wide"))
-	}
+		hero,
 
-	out = append(out,
+		milestone("1843", "The First Mass",
+			"Father Benedict Bayer celebrates Mass in the home of Thomas Doorley, near Webb's Crossing. Doorley will later mortgage his farm to help build the church."),
+
 		heading(2, "Early Origins (1843–1851)"),
 		rich(`
 <p>Catholic missionary activity in the Hornellsville area began in the 1840s, when <strong>Redemptorist priests</strong> rode circuit to minister to the Irish immigrant laborers building the railroads of western New York. In <strong>1843</strong>, Father Benedict Bayer celebrated the first Mass in the area in the home of Thomas Doorley, near Webb's Crossing — a farmhouse that would be remembered as the cradle of the parish.</p>
 <p>Doorley became the first subscriber to the church building fund in 1849, mortgaging his farm to help put a roof over the altar. That same year — after the <strong>Diocese of Buffalo</strong> was established in 1847 and Bishop John Timon appointed <strong>Reverend Michael O'Brien</strong> as first pastor — the parish was formally organized and a first church was built at the northwest corner of Cass and Buffalo Streets.</p>
 <p>Regular weekly Sunday Masses began in <strong>1851</strong> under Reverend Daniel Delacy Moore. That date is the one the parish counts from, which is why 2026 marks the <strong>175th anniversary</strong>.</p>
 `),
-		// Placeholder slot for an early postcard of the first church (Cass & Buffalo).
-		// asset_id=0 means the public page skips it silently; the admin editor shows
-		// it as an asset-picker slot so staff can drop a historic photo in.
-		image(0, "Early photograph of St. Ann's Church", "Upload a historic photograph here — e.g. an early postcard view of St. Ann's.", "wide"),
+
+		milestone("1869", "The Present Church Dedicated",
+			"On April 11, Father Michael Creedon dedicates the French Gothic Revival Church of St. Ann on Erie Avenue. Its 1870s pipe organ still sounds today."),
 
 		heading(2, "A New Church and a Parish School (1860s–1890s)"),
 		rich(`
@@ -141,8 +158,9 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 <p>Father Creedon also founded <strong>St. Ann School</strong> in 1863 — the beginning of Catholic education in Hornell. A larger school building opened in 1890 with capacity for roughly 300 students; a wing was added in 1962. The school served generations of families until it closed for financial reasons in 2012. The parish responded by opening <strong>St. Ann's Academy</strong> in 2013, continuing the educational mission in a new form.</p>
 <p>In <strong>1897</strong> the parish was transferred from the Diocese of Buffalo to the newly expanded <strong>Diocese of Rochester</strong>, where it has remained ever since.</p>
 `),
-		// Placeholder slot for the historic St. Ann's School / Academy postcard.
-		image(0, "St. Ann's School, c. 1910", "Upload a historic photograph of St. Ann's School here — e.g. the 1890 school building postcard.", "wide"),
+
+		milestone("1912", "The Federation Building",
+			"Parishioners complete the Neoclassical community hall designed by Otis Dockstader. It is added to the National Register of Historic Places in 2001."),
 
 		heading(2, "A Parish in a Growing City (1910–2000)"),
 		rich(`
@@ -150,8 +168,9 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 <p>In 1998, St. Ann's was clustered with three neighboring parishes: <strong>St. Mary in Rexville</strong>, St. Ignatius Loyola in Hornell, and St. Joachim in Canisteo. In <strong>2004</strong>, those four communities were reorganized into a single parish — <strong>Our Lady of the Valley</strong>. St. Joachim and St. Ignatius Loyola were later closed; the parish today encompasses the historic churches of St. Ann in Hornell and St. Mary in Rexville. A <strong>perpetual adoration chapel</strong> has operated on the St. Ann's campus since 2001.</p>
 <p>In April 2004, a fire — caused by an improperly discarded charcoal incense briquet after Benediction — damaged the sacristy and left smoke damage throughout the church. Masses were temporarily relocated while cleanup proceeded; the historic organ was carefully disassembled and cleaned by hand. In the early 2020s a further round of exterior restoration — brick repointing and steeple work — addressed moisture issues and preserved the building for the next generation.</p>
 `),
-		// Placeholder slot for the Federation Building (NRHP 2001).
-		image(0, "St. Ann's Federation Building, Hornell", "Upload a photograph of the Federation Building here (Otis Dockstader, 1910–1912; added to the National Register of Historic Places in 2001).", "medium"),
+
+		milestone("2004", "Our Lady of the Valley",
+			"St. Ann (Hornell), St. Mary (Rexville), St. Ignatius Loyola, and St. Joachim merge into a single parish. A perpetual adoration chapel opens on the St. Ann campus."),
 
 		heading(2, "The 175th Jubilee (2025–2026)"),
 		rich(`
@@ -165,14 +184,14 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 </ul>
 <p>Today, Our Lady of the Valley reports about <strong>600 active members</strong>. The Church of St. Ann at <strong>27 Erie Avenue</strong> and St. Mary's in Rexville continue a story that is older than the Diocese of Rochester itself — and, God willing, far from finished.</p>
 `),
-		// Placeholder slot for a Jubilee photo (Bishop's Mass, sand sculpture, etc.).
-		image(0, "175th Jubilee celebration, July 2026", "Upload a Jubilee photograph here — e.g. Bishop Bonnici's Mass, the sand sculpture of the church, or the Webb's Crossing prayer service.", "wide"),
+
+		milestone("2026", "175 Years",
+			"Bishop John S. Bonnici celebrates the Jubilee Mass on the Feast of Saints Joachim and Anne. About 600 active members carry the story forward."),
 
 		divider(),
 		rich(`
 <p class="parish-prose-small"><em>Sources: Hornell Sun — "St. Ann's Church and School: A Pillar of Faith and Community in Hornell"; Catholic Courier; Evening Tribune; WENY — "Saint Ann's Church in Hornell Celebrates Jubilee"; NYS Senate archives; National Register of Historic Places (Federation Building, listed 2001).</em></p>
+<p class="parish-prose-small"><em>Historic photographs can be added to any section via the admin editor. The parish archives, public-domain postcards, and Diocese of Rochester records are all good sources.</em></p>
 `),
-	)
-
-	return out
+	}
 }
