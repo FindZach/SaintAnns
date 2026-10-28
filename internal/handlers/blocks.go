@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -555,18 +556,118 @@ func loadAsset(db *gorm.DB, id uint) *models.Asset {
 	return &asset
 }
 
-// sanitizeHTML strips script / style / event-handler attributes. The parish
-// doesn't need rich HTML — the editor's rich_text block will produce a limited
-// set of tags — but just in case something slips through, we clean up here.
+// Compiled once at package load. These strip entire script/style/noscript
+// elements including their contents (case-insensitive, dot matches newline);
+// the previous "substring remove" approach left the JS body behind as text.
+var (
+	scriptBlockRE   = regexp.MustCompile(`(?is)<script[^>]*>.*?</script\s*>`)
+	styleBlockRE    = regexp.MustCompile(`(?is)<style[^>]*>.*?</style\s*>`)
+	noscriptBlockRE = regexp.MustCompile(`(?is)<noscript[^>]*>.*?</noscript\s*>`)
+	// WP "Email Encoder Bundle" leaves this pair: <span id="eeb-N-M"></span>
+	// followed by a script that URL-decodes the real address into the span.
+	// Pull both out of the string and substitute a plain mailto link.
+	wpEEBPairRE = regexp.MustCompile(`(?is)<span[^>]*id="eeb-[^"]*"[^>]*>\s*</span>\s*(<script[^>]*>[^<]*?decodeURIComponent\("([^"]+)"\)[^<]*</script>)?`)
+	// Fallback for already-sanitized leftovers: the raw body of the script
+	// after our old sanitizer removed just the <script> markers.
+	wpEEBScriptBodyRE = regexp.MustCompile(`(?is)\s*type="text/javascript">[^<]*decodeURIComponent\("([^"]+)"\)[^<]*>`)
+	// Another WP encoder variant: <a href=";" data-enc-email="rot13[at]rot13" ...>label</a>
+	wpEncLinkRE = regexp.MustCompile(`(?is)<a[^>]*data-enc-email="([^"]+)"[^>]*>(.*?)</a>`)
+	// On-attribute event handlers; strip after block removals so we don't try
+	// to parse attributes we already deleted.
+	onEventRE = regexp.MustCompile(`(?i)\s(on(?:click|load|error|focus|mouseover|submit|change|blur|keyup|keydown|input))\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)`)
+)
+
+// sanitizeHTML removes elements that have no place in parish body copy and
+// cleans up leftovers from the WordPress import. In order:
+//  1. Delete entire <script>, <style>, <noscript> elements (contents included).
+//  2. Decode "Email Encoder Bundle" obfuscations into plain mailto links so
+//     an address like david.prete@dor.org is kept, not stripped.
+//  3. Scrub on-event attributes and javascript: URLs.
 func sanitizeHTML(in string) string {
-	// Minimal passthrough strip. For a real-world launch, swap in bluemonday.
 	s := in
-	for _, bad := range []string{"<script", "</script", "<style", "</style",
-		"javascript:", "onerror=", "onclick=", "onload=", "onfocus="} {
-		s = strings.ReplaceAll(s, bad, "")
-		s = strings.ReplaceAll(s, strings.ToUpper(bad), "")
-	}
+
+	// (2a) Encoder "pair" form: <span id="eeb-…"></span><script>decodeURIComponent("…")</script>
+	s = wpEEBPairRE.ReplaceAllStringFunc(s, func(match string) string {
+		m := wpEEBPairRE.FindStringSubmatch(match)
+		if len(m) >= 3 && m[2] != "" {
+			if addr, err := url.QueryUnescape(m[2]); err == nil && strings.Contains(addr, "@") {
+				return mailtoLink(addr)
+			}
+		}
+		// No decodable address — drop the span but keep nothing visible.
+		return ""
+	})
+
+	// (2b) data-enc-email ROT13 form.
+	s = wpEncLinkRE.ReplaceAllStringFunc(s, func(match string) string {
+		m := wpEncLinkRE.FindStringSubmatch(match)
+		if len(m) >= 3 {
+			if addr := decodeROT13Email(m[1]); strings.Contains(addr, "@") {
+				return mailtoLink(addr)
+			}
+		}
+		return ""
+	})
+
+	// (1) Now that encoder matches used the script tags, remove any surviving
+	// script/style/noscript blocks whole.
+	s = scriptBlockRE.ReplaceAllString(s, "")
+	s = styleBlockRE.ReplaceAllString(s, "")
+	s = noscriptBlockRE.ReplaceAllString(s, "")
+
+	// (2c) Encoder "body-only" form left by the previous sanitizer: `
+	// type="text/javascript">...decodeURIComponent("…")...>` with no opening
+	// <script. We already decoded in (2a) via the <span> that preceded it,
+	// but when the <span> is missing we still want to decode this body.
+	s = wpEEBScriptBodyRE.ReplaceAllStringFunc(s, func(match string) string {
+		m := wpEEBScriptBodyRE.FindStringSubmatch(match)
+		if len(m) >= 2 {
+			if addr, err := url.QueryUnescape(m[1]); err == nil && strings.Contains(addr, "@") {
+				return mailtoLink(addr)
+			}
+		}
+		return ""
+	})
+
+	// (3) Scrub on-event handlers and javascript: urls.
+	s = onEventRE.ReplaceAllString(s, "")
+	s = strings.ReplaceAll(s, "javascript:", "about:blank#")
+	s = strings.ReplaceAll(s, "JAVASCRIPT:", "about:blank#")
+
 	return s
+}
+
+func mailtoLink(addr string) string {
+	addr = strings.TrimSpace(addr)
+	return fmt.Sprintf(`<a href="mailto:%s">%s</a>`,
+		html.EscapeString(addr), html.EscapeString(addr))
+}
+
+// decodeROT13Email turns the WP "data-enc-email" format
+// (ROT13-encoded local + literal "[at]" + ROT13-encoded domain) back into
+// local@domain. The "[at]" marker is a plain separator — it is not itself
+// ROT13-encoded in the source — so we split on it first and decode each
+// side independently.
+func decodeROT13Email(s string) string {
+	parts := strings.SplitN(s, "[at]", 2)
+	if len(parts) != 2 {
+		return rot13(s)
+	}
+	return rot13(parts[0]) + "@" + rot13(parts[1])
+}
+
+func rot13(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z':
+			r = 'a' + (r-'a'+13)%26
+		case r >= 'A' && r <= 'Z':
+			r = 'A' + (r-'A'+13)%26
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
 
 func videoEmbedURL(provider, raw string) string {
