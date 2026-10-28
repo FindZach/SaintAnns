@@ -480,7 +480,7 @@ func iconForSlug(slug string) string {
 	case strings.Contains(s, "bereavement"):
 		return "fa-dove"
 	case strings.Contains(s, "children"), strings.Contains(s, "childrens"):
-		return "fa-child-reaching"
+		return "fa-child"
 	case strings.Contains(s, "mom"), strings.Contains(s, "support-group"):
 		return "fa-people-group"
 	case strings.Contains(s, "pastoral-council"):
