@@ -128,8 +128,57 @@ a:hover { color: var(--parish-navy); }
     gap: 0.15rem;
     align-items: center;
 }
+.parish-nav-item { position: relative; }
+.parish-nav-chevron {
+    font-size: 0.6rem;
+    margin-left: 0.25rem;
+    opacity: 0.6;
+    transition: transform 0.2s ease;
+}
+.parish-nav-item:hover .parish-nav-chevron { transform: rotate(180deg); opacity: 1; }
+.parish-nav-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    min-width: 230px;
+    background: var(--parish-white);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0;
+    box-shadow: 0 20px 40px -20px rgba(30, 58, 95, 0.35);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.2s ease, visibility 0.15s;
+    z-index: 50;
+}
+.parish-nav-item:hover .parish-nav-dropdown,
+.parish-nav-item:focus-within .parish-nav-dropdown {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+.parish-nav-dropdown-link {
+    display: block;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: var(--parish-ink);
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    transition: color 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+}
+.parish-nav-dropdown-link:hover {
+    background: var(--parish-blue-soft);
+    color: var(--parish-navy);
+}
+
 .parish-nav-link {
     position: relative;
+    display: inline-flex;
+    align-items: center;
     color: var(--parish-ink);
     padding: 0.4rem 0.75rem;
     font-weight: 500;
@@ -188,6 +237,12 @@ a:hover { color: var(--parish-navy); }
 .parish-nav-mobile-link:last-child { border-bottom: 0; }
 .parish-nav-mobile-link:hover { color: var(--parish-navy); background: var(--parish-cream-warm); }
 .parish-nav-mobile-link-muted { color: var(--parish-muted); font-size: 0.9rem; }
+.parish-nav-mobile-link-child {
+    padding-left: 2rem;
+    font-size: 0.9rem;
+    color: var(--parish-muted);
+    font-weight: 400;
+}
 
 /* Hide the subtitle below desktop; collapse nav to hamburger below a
    width where the full label row still breathes. */

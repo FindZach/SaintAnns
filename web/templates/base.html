@@ -43,7 +43,16 @@
 
             <nav class="parish-nav-links" aria-label="Primary">
                 {{range nav}}
-                <a href="{{.Href}}" class="parish-nav-link" {{if .External}}target="_blank" rel="noopener"{{end}}>{{.Label}}</a>
+                <div class="parish-nav-item{{if .Children}} has-dropdown{{end}}">
+                    <a href="{{.Href}}" class="parish-nav-link" {{if .External}}target="_blank" rel="noopener"{{end}}>{{.Label}}{{if .Children}} <i class="fas fa-chevron-down parish-nav-chevron" aria-hidden="true"></i>{{end}}</a>
+                    {{if .Children}}
+                    <div class="parish-nav-dropdown" role="menu">
+                        {{range .Children}}
+                        <a href="{{.Href}}" class="parish-nav-dropdown-link" role="menuitem">{{.Label}}</a>
+                        {{end}}
+                    </div>
+                    {{end}}
+                </div>
                 {{end}}
             </nav>
 
@@ -55,6 +64,9 @@
         <div id="mobile-menu" class="parish-nav-mobile" hidden>
             {{range nav}}
             <a href="{{.Href}}" class="parish-nav-mobile-link" {{if .External}}target="_blank" rel="noopener"{{end}}>{{.Label}}</a>
+            {{range .Children}}
+            <a href="{{.Href}}" class="parish-nav-mobile-link parish-nav-mobile-link-child">{{.Label}}</a>
+            {{end}}
             {{end}}
             {{if .user}}
             <a href="/admin" class="parish-nav-mobile-link">Admin</a>
