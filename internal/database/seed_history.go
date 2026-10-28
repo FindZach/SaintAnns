@@ -28,11 +28,15 @@ func SeedHistoryPage(db *gorm.DB) error {
 	log.Println("Seeding parish history page at /about/our-history/ ...")
 
 	// Pick the biggest St. Ann exterior photo already in the Asset library so
-	// the page has a hero image. Falls back to no-image if nothing matches,
-	// in which case staff can drop one in via the admin editor.
-	heroAssetID := findBestAssetByPatterns(db, []string{
-		"%stannhornell%", "%st-ann%", "%st_ann%", "%ann%church%",
-	})
+	// the page has a hero image. Excludes signs / chapel / adoration shots so
+	// we don't accidentally pick the Perpetual Adoration Chapel sign as a
+	// stand-in for the church exterior. Falls back to no-image (asset_id=0)
+	// if nothing matches, in which case staff can drop one in via the admin
+	// editor and the public page silently omits the hero figure.
+	heroAssetID := findBestAssetByPatternsExcluding(db,
+		[]string{"%stannhornell%exterior%", "%stannhornell%church%", "%st-ann%exterior%", "%stannhornell%"},
+		[]string{"%adoration%", "%chapel%", "%sign%", "%monstrance%"},
+	)
 
 	blocks := historyBlocks(heroAssetID)
 
@@ -79,16 +83,20 @@ func SeedHistoryPage(db *gorm.DB) error {
 	return nil
 }
 
-// findBestAssetByPatterns returns the ID of the largest image whose
-// original_name or path matches any of the given ILIKE patterns, or 0 if none.
-func findBestAssetByPatterns(db *gorm.DB, patterns []string) uint {
-	for _, pat := range patterns {
-		var a models.Asset
+// findBestAssetByPatternsExcluding returns the ID of the largest image whose
+// original_name or path matches any of the include patterns AND matches none
+// of the exclude patterns, or 0 if nothing qualifies. Patterns are tried in
+// order; first include-pattern with any match wins. All matching is case-
+// insensitive (ILIKE).
+func findBestAssetByPatternsExcluding(db *gorm.DB, include, exclude []string) uint {
+	for _, pat := range include {
 		q := db.Where("kind = ? AND (original_name ILIKE ? OR path ILIKE ?)",
-			models.AssetImage, pat, pat).
-			Order("byte_size DESC").
-			Limit(1)
-		if err := q.First(&a).Error; err == nil {
+			models.AssetImage, pat, pat)
+		for _, ex := range exclude {
+			q = q.Where("original_name NOT ILIKE ? AND path NOT ILIKE ?", ex, ex)
+		}
+		var a models.Asset
+		if err := q.Order("byte_size DESC").Limit(1).First(&a).Error; err == nil {
 			return a.ID
 		}
 	}
@@ -128,9 +136,13 @@ func historyBlocks(heroAssetID uint) models.Blocks {
 `),
 	}
 
-	// Hero: the modern exterior from the Asset library, if we found one.
+	// Hero: the modern exterior from the Asset library, if we found a true
+	// exterior shot. If nothing matched, leave a placeholder slot so admin
+	// sees an asset-picker in the editor and can upload the right photo.
 	if heroAssetID != 0 {
 		out = append(out, image(heroAssetID, "St. Ann's Church, Hornell", "St. Ann's Church, 27 Erie Avenue, Hornell — dedicated April 11, 1869.", "wide"))
+	} else {
+		out = append(out, image(0, "St. Ann's Church, Hornell", "Upload an exterior photograph of St. Ann's Church here — the hero image for the history page.", "wide"))
 	}
 
 	out = append(out,
