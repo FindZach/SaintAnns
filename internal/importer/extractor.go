@@ -159,7 +159,7 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		}
 		// Otherwise emit the <p>'s rendered HTML as a rich_text block.
 		if h := strings.TrimSpace(renderInnerHTML(n)); h != "" {
-			data, _ := json.Marshal(richTextData{HTML: "<p>" + h + "</p>"})
+			data, _ := json.Marshal(richTextData{HTML: rewriteParishLinks("<p>" + h + "</p>")})
 			return &models.Block{Type: models.BlockRichText, Data: data}, true
 		}
 		return nil, true
@@ -174,7 +174,7 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		var buf bytes.Buffer
 		if err := html.Render(&buf, n); err == nil {
 			if h := strings.TrimSpace(buf.String()); h != "" {
-				data, _ := json.Marshal(richTextData{HTML: h})
+				data, _ := json.Marshal(richTextData{HTML: rewriteParishLinks(h)})
 				return &models.Block{Type: models.BlockRichText, Data: data}, true
 			}
 		}
@@ -184,7 +184,7 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		var buf bytes.Buffer
 		if err := html.Render(&buf, n); err == nil {
 			if h := strings.TrimSpace(buf.String()); h != "" {
-				data, _ := json.Marshal(richTextData{HTML: h})
+				data, _ := json.Marshal(richTextData{HTML: rewriteParishLinks(h)})
 				return &models.Block{Type: models.BlockRichText, Data: data}, true
 			}
 		}
@@ -535,4 +535,30 @@ func escText(s string) string {
 	s = strings.ReplaceAll(s, "<", "&lt;")
 	s = strings.ReplaceAll(s, ">", "&gt;")
 	return s
+}
+
+// parishDomains are the hostname forms we treat as "the live site" and strip
+// out of rich_text href/src attributes so links stop pointing at olv14843.org.
+// External links (Diocese, Catholic Courier, etc.) are left alone.
+var parishDomains = []string{
+	"https://www.olv14843.org",
+	"http://www.olv14843.org",
+	"https://olv14843.org",
+	"http://olv14843.org",
+}
+
+// rewriteParishLinks rewrites every href= and src= that points to the parish's
+// own domain into a root-relative path. Called on all rendered rich_text HTML
+// before it is persisted so imported links resolve on the new deploy instead
+// of sending visitors back to the live site.
+func rewriteParishLinks(h string) string {
+	for _, d := range parishDomains {
+		// Full URL with path (keep the leading slash as our relative path).
+		h = strings.ReplaceAll(h, `href="`+d+`/`, `href="/`)
+		h = strings.ReplaceAll(h, `src="`+d+`/`, `src="/`)
+		// Bare domain with no path (rare; collapse to root).
+		h = strings.ReplaceAll(h, `href="`+d+`"`, `href="/"`)
+		h = strings.ReplaceAll(h, `src="`+d+`"`, `src="/"`)
+	}
+	return h
 }
