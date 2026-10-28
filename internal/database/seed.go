@@ -156,10 +156,10 @@ func seedNav(db *gorm.DB) error {
 	items := []models.NavItem{
 		{Sort: 10, Label: "Home", Href: "/", Enabled: true},
 		{Sort: 20, Label: "About", Href: "/about/", Enabled: true},
-		{Sort: 30, Label: "Liturgy & Sacraments", Href: "/liturgy-and-sacraments/", Enabled: true},
+		{Sort: 30, Label: "Sacraments", Href: "/liturgy-and-sacraments/", Enabled: true},
 		{Sort: 40, Label: "Ministries", Href: "/minstries/", Enabled: true},
 		{Sort: 50, Label: "Faith Formation", Href: "/faith-formation/", Enabled: true},
-		{Sort: 60, Label: "Events & News", Href: "/events-news/", Enabled: true},
+		{Sort: 60, Label: "Events", Href: "/events-news/", Enabled: true},
 		{Sort: 70, Label: "Contact", Href: "/contact/", Enabled: true},
 	}
 	for _, item := range items {
