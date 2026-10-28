@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -359,7 +360,8 @@ type childPagesData struct {
 // renderChildPages lists every published Page whose ParentSlug matches the
 // block's parent_slug. Used by the importer for hub pages (/minstries/,
 // /faith-formation/, etc.) that have no body of their own on the live site but
-// link to several sub-pages.
+// link to several sub-pages. Each child renders as a card with a derived icon
+// and a short description pulled from its own content.
 func renderChildPages(out *strings.Builder, raw json.RawMessage, db *gorm.DB) {
 	if db == nil {
 		return
@@ -377,16 +379,132 @@ func renderChildPages(out *strings.Builder, raw json.RawMessage, db *gorm.DB) {
 	if d.Intro != "" {
 		fmt.Fprintf(out, `<p class="parish-block-child-pages-intro">%s</p>`, html.EscapeString(d.Intro))
 	}
-	out.WriteString(`<ul class="parish-block-child-pages">`)
+	out.WriteString(`<div class="parish-block-child-cards">`)
 	for _, c := range children {
 		label := c.NavLabel
 		if label == "" {
 			label = c.Title
 		}
-		fmt.Fprintf(out, `<li><a href="/%s/">%s</a></li>`,
-			html.EscapeString(c.Slug), html.EscapeString(label))
+		icon := iconForSlug(c.Slug)
+		desc := childPageDescription(c)
+		fmt.Fprintf(out,
+			`<a class="parish-child-card" href="/%s/">`+
+				`<span class="parish-child-card-icon" aria-hidden="true"><i class="fas %s"></i></span>`+
+				`<span class="parish-child-card-body">`+
+				`<h3 class="parish-child-card-title">%s</h3>`+
+				`%s`+
+				`<span class="parish-child-card-cta">Learn more <i class="fas fa-arrow-right" aria-hidden="true"></i></span>`+
+				`</span>`+
+				`</a>`,
+			html.EscapeString(c.Slug),
+			icon,
+			html.EscapeString(label),
+			descMarkup(desc),
+		)
 	}
-	out.WriteString(`</ul>`)
+	out.WriteString(`</div>`)
+}
+
+func descMarkup(desc string) string {
+	if desc == "" {
+		return ""
+	}
+	return `<p class="parish-child-card-desc">` + html.EscapeString(desc) + `</p>`
+}
+
+// childPageDescription returns a short teaser for a child page. Prefers
+// MetaDescription when set; otherwise strips tags from the first rich_text
+// block and truncates to ~140 chars at a word boundary.
+func childPageDescription(p models.Page) string {
+	if md := strings.TrimSpace(p.MetaDescription); md != "" {
+		return truncateAtWord(md, 140)
+	}
+	for _, b := range p.Blocks {
+		if b.Type != models.BlockRichText {
+			continue
+		}
+		var rd struct {
+			HTML string `json:"html"`
+		}
+		if err := json.Unmarshal(b.Data, &rd); err != nil {
+			continue
+		}
+		text := collapseWS(stripHTMLTags(rd.HTML))
+		if text != "" {
+			return truncateAtWord(text, 140)
+		}
+	}
+	return ""
+}
+
+var (
+	tagStripRE = regexp.MustCompile(`<[^>]+>`)
+	whitespcRE = regexp.MustCompile(`\s+`)
+)
+
+func stripHTMLTags(s string) string { return tagStripRE.ReplaceAllString(s, " ") }
+func collapseWS(s string) string {
+	return strings.TrimSpace(whitespcRE.ReplaceAllString(s, " "))
+}
+
+func truncateAtWord(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	trimmed := s[:max]
+	if cut := strings.LastIndex(trimmed, " "); cut > max/2 {
+		trimmed = trimmed[:cut]
+	}
+	return strings.TrimRight(trimmed, " .,;:—–-") + "…"
+}
+
+// iconForSlug picks a Font Awesome icon that fits the ministry's theme.
+// Falls back to a generic church icon so unknown slugs still render.
+func iconForSlug(slug string) string {
+	s := strings.ToLower(slug)
+	switch {
+	case strings.Contains(s, "music"):
+		return "fa-music"
+	case strings.Contains(s, "lector"):
+		return "fa-book-open"
+	case strings.Contains(s, "altar-server"):
+		return "fa-cross"
+	case strings.Contains(s, "funeral"):
+		return "fa-pray"
+	case strings.Contains(s, "usher"):
+		return "fa-door-open"
+	case strings.Contains(s, "grief"):
+		return "fa-heart"
+	case strings.Contains(s, "preparing-to-honor"):
+		return "fa-dove"
+	case strings.Contains(s, "bereavement"):
+		return "fa-dove"
+	case strings.Contains(s, "children"), strings.Contains(s, "childrens"):
+		return "fa-child-reaching"
+	case strings.Contains(s, "mom"), strings.Contains(s, "support-group"):
+		return "fa-people-group"
+	case strings.Contains(s, "pastoral-council"):
+		return "fa-users-gear"
+	case strings.Contains(s, "finance"):
+		return "fa-coins"
+	case strings.Contains(s, "liturgy-committee"):
+		return "fa-church"
+	case strings.Contains(s, "cemetery"):
+		return "fa-monument"
+	case strings.Contains(s, "holy-communion"), strings.Contains(s, "emhc"), strings.Contains(s, "extra-ordinary"):
+		return "fa-wine-glass"
+	case strings.Contains(s, "young-adult"), strings.Contains(s, "faith-on-tap"):
+		return "fa-mug-hot"
+	case strings.Contains(s, "rite-of-christian-initiation"), strings.Contains(s, "rcia"):
+		return "fa-user-plus"
+	case strings.Contains(s, "quest"), strings.Contains(s, "youth"):
+		return "fa-users"
+	case strings.Contains(s, "faith-formation"), strings.Contains(s, "faith-foramtion"):
+		return "fa-bible"
+	case strings.Contains(s, "sacraments"), strings.Contains(s, "baptism"), strings.Contains(s, "confirmation"), strings.Contains(s, "reconciliation"), strings.Contains(s, "matrimony"), strings.Contains(s, "holy-orders"), strings.Contains(s, "anointing"), strings.Contains(s, "adoration"):
+		return "fa-cross"
+	}
+	return "fa-church"
 }
 
 type staffGridData struct {

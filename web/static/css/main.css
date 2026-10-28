@@ -736,29 +736,86 @@ a:hover { color: var(--parish-navy); }
     width: 100%; height: 100%; border: 0;
 }
 .parish-block-cta { margin: 2rem 0; }
-.parish-block-child-pages {
-    list-style: none; padding: 0; margin: 1.5rem 0;
+/* child_pages block renders a grid of rich ministry cards: icon, title,
+   short description pulled from the child page, and a Learn more arrow. */
+.parish-block-child-pages-intro {
+    color: var(--parish-muted);
+    font-size: 1.05rem;
+    max-width: 48rem;
+    margin: 0.5rem 0 1.5rem;
+    line-height: 1.6;
+}
+.parish-block-child-cards {
     display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    margin: 1.5rem 0;
 }
-.parish-block-child-pages li {
-    background: var(--parish-cream);
+.parish-child-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    background: var(--parish-white);
     border: 1px solid var(--parish-rule);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    transition: all 0.15s ease;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
-.parish-block-child-pages li:hover {
+.parish-child-card:hover {
     border-color: var(--parish-blue);
-    background: var(--parish-blue-soft);
-}
-.parish-block-child-pages a {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -12px rgba(30, 58, 95, 0.3);
     color: var(--parish-navy);
-    font-weight: 500;
-    display: block;
 }
-.parish-block-child-pages-intro { color: var(--parish-muted); margin: 1.5rem 0 0.5rem; }
+.parish-child-card-icon {
+    width: 3rem; height: 3rem;
+    border-radius: 999px;
+    background: var(--parish-blue-soft);
+    color: var(--parish-navy);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.parish-child-card:hover .parish-child-card-icon {
+    background: var(--parish-navy);
+    color: var(--parish-gold);
+}
+.parish-child-card-body { display: flex; flex-direction: column; min-width: 0; }
+.parish-child-card-title {
+    margin: 0 0 0.4rem;
+    font-size: 1.2rem;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    color: var(--parish-navy);
+    line-height: 1.2;
+    letter-spacing: 0.005em;
+}
+.parish-child-card-desc {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--parish-muted);
+    line-height: 1.55;
+}
+.parish-child-card-cta {
+    font-size: 0.82rem;
+    color: var(--parish-blue);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: auto;
+    transition: gap 0.2s ease, color 0.2s ease;
+}
+.parish-child-card:hover .parish-child-card-cta {
+    gap: 0.6rem;
+    color: var(--parish-navy);
+}
 .parish-block-event-list, .parish-block-bulletin-list { list-style: none; padding: 0; margin: 1.5rem 0; }
 .parish-block-event-list li, .parish-block-bulletin-list li {
     padding: 0.75rem 0; border-bottom: 1px dashed var(--parish-rule);
