@@ -22,10 +22,38 @@ func NewPageHandler(db *gorm.DB) *PageHandler {
 	return &PageHandler{db: db}
 }
 
+// shortAliases maps WordPress-style shortcut permalinks to the canonical
+// nested slug for the same page. The live olv14843.org site exposes
+// `/holy-communion`, `/first-penance`, etc. as pretty permalinks that resolve
+// to the full `/liturgy-and-sacraments/sacraments/...` paths; the imported
+// content kept those shortcuts, so we honor them here with a 301 redirect
+// to the canonical URL. Entries are the shortcut (no leading slash) → canonical slug.
+var shortAliases = map[string]string{
+	"holy-communion":        "liturgy-and-sacraments/sacraments/holy-communion",
+	"first-communion":       "liturgy-and-sacraments/sacraments/holy-communion",
+	"first-penance":         "liturgy-and-sacraments/sacraments/reconciliation",
+	"reconciliation":        "liturgy-and-sacraments/sacraments/reconciliation",
+	"baptism":               "liturgy-and-sacraments/sacraments/baptism",
+	"confirmation":          "liturgy-and-sacraments/sacraments/confirmation",
+	"matrimony":             "liturgy-and-sacraments/sacraments/matrimony",
+	"holy-orders":           "liturgy-and-sacraments/sacraments/holy-orders",
+	"anointing-of-the-sick": "liturgy-and-sacraments/sacraments/anointing-of-the-sick",
+	"sacraments":            "liturgy-and-sacraments/sacraments",
+	"mass-times":            "liturgy-and-sacraments/mass-times",
+	"confession-times":      "liturgy-and-sacraments/confession-times",
+	"perpetual-adoration":   "liturgy-and-sacraments/perpetural-adoration",
+	"perpetural-adoration":  "liturgy-and-sacraments/perpetural-adoration",
+	"ministries":            "minstries",
+	"parish-registration":   "about/parish-registration",
+	"bulletins":             "about/bulletins",
+	"donate":                "about/donate",
+	"staff":                 "about/staff",
+	"photo-albums":          "about/photo-albums",
+}
+
 // Render looks up the Page row that matches the request URL's slug and renders
-// it. Missing pages return 404. Degraded mode (no DB) returns 404 everywhere
-// NoRoute catches, which is the right answer — we don't want to serve stale
-// cached content either.
+// it. Missing pages try a basename / shortAliases redirect before 404ing, so
+// WordPress-style short permalinks the import preserved still work.
 func (h *PageHandler) Render(c *gin.Context) {
 	slug := slugFromPath(c.Request.URL.Path)
 	if slug == "" {
@@ -39,7 +67,13 @@ func (h *PageHandler) Render(c *gin.Context) {
 	}
 
 	var page models.Page
-	if err := h.db.Where("slug = ?", slug).First(&page).Error; err != nil {
+	err := h.db.Where("slug = ?", slug).First(&page).Error
+	if err != nil {
+		// Fallback: short permalink → canonical nested slug.
+		if canonical := resolveShortAlias(h.db, slug); canonical != "" {
+			c.Redirect(http.StatusMovedPermanently, "/"+canonical+"/")
+			return
+		}
 		c.String(http.StatusNotFound, "Not found")
 		return
 	}
@@ -62,6 +96,29 @@ func (h *PageHandler) Render(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "page.html", data)
+}
+
+// resolveShortAlias returns the canonical slug for a shortcut URL, or empty.
+// It consults the hand-maintained shortAliases map first, then falls back to
+// a last-segment match: if the shortcut has no slashes and exactly one
+// published page's slug ends with "/<shortcut>", that one wins.
+func resolveShortAlias(db *gorm.DB, shortcut string) string {
+	shortcut = strings.Trim(shortcut, "/")
+	if shortcut == "" || strings.Contains(shortcut, "/") {
+		return "" // only consider single-segment shortcuts
+	}
+	if canonical, ok := shortAliases[shortcut]; ok {
+		return canonical
+	}
+	var matches []models.Page
+	if err := db.Where("slug LIKE ? AND published_at IS NOT NULL AND published_at <= NOW()", "%/"+shortcut).
+		Limit(2).Find(&matches).Error; err != nil {
+		return ""
+	}
+	if len(matches) == 1 {
+		return matches[0].Slug
+	}
+	return ""
 }
 
 // slugFromPath turns "/about/parish-registration/" into
