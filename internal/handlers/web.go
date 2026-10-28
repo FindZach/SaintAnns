@@ -44,6 +44,7 @@ func (h *PublicHandler) Home(c *gin.Context) {
 	confessions := LoadConfessionTimes(h.db)
 	headlines := LoadCourierHeadlines(h.db, 5)
 	stAnn, stMary := LoadChurchPhotos(h.db)
+	upcoming := LoadUpcomingEvents(h.db, 5)
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"title":           "Our Lady of the Valley Parish",
 		"page":            "home",
@@ -52,8 +53,31 @@ func (h *PublicHandler) Home(c *gin.Context) {
 		"headlines":       headlines,
 		"stAnnPhoto":      stAnn,
 		"stMaryPhoto":     stMary,
+		"upcomingEvents":  upcoming,
 		"version":         assetVersion,
 	})
+}
+
+// LoadUpcomingEvents returns upcoming parish events for the home page,
+// preferring events marked Featured but falling back to the next few events
+// chronologically if there aren't enough featured ones. Only events whose
+// start time is still in the future are included.
+func LoadUpcomingEvents(db *gorm.DB, limit int) []models.Event {
+	if db == nil || limit <= 0 {
+		return nil
+	}
+	var events []models.Event
+	// Featured first, then by starts_at ascending — a featured event always
+	// outranks a non-featured one even if sooner, so staff can pin a Mass or
+	// retreat at the top of the home page.
+	if err := db.Preload("FlyerAsset").
+		Where("starts_at >= NOW()").
+		Order("featured DESC, starts_at ASC").
+		Limit(limit).
+		Find(&events).Error; err != nil {
+		return nil
+	}
+	return events
 }
 
 // LoadChurchPhotos returns the exterior photo an admin has explicitly tagged

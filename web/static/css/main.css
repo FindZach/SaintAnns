@@ -1040,6 +1040,112 @@ a:hover { color: var(--parish-navy); }
     opacity: 0.3;
 }
 .parish-church-glass { width: 100%; height: 100%; display: block; }
+
+/* ---------- Upcoming Events (home page) ---------- */
+.parish-upcoming-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.parish-upcoming-item { margin: 0; }
+.parish-upcoming-link {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    gap: 1.25rem;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border: 1px solid #e8e4d8;
+    border-radius: 0.5rem;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.parish-upcoming-link:hover {
+    border-color: var(--parish-gold);
+    box-shadow: 0 6px 20px -8px rgba(30,58,95,0.2);
+    transform: translateY(-1px);
+    color: inherit;
+}
+.parish-upcoming-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--parish-navy);
+    color: #faf6ef;
+    border-radius: 0.4rem;
+    padding: 0.5rem;
+    aspect-ratio: 1 / 1;
+    text-align: center;
+}
+.parish-upcoming-day {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--parish-gold);
+}
+.parish-upcoming-month {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 0.15rem;
+    opacity: 0.9;
+}
+.parish-upcoming-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    color: var(--parish-navy);
+    margin: 0 0 0.25rem;
+}
+.parish-upcoming-badge {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--parish-gold);
+    color: #fff;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.25rem;
+    vertical-align: middle;
+    margin-left: 0.35rem;
+}
+.parish-upcoming-meta {
+    margin: 0;
+    color: #555;
+    font-size: 0.9rem;
+}
+.parish-upcoming-meta i { color: var(--parish-gold); margin-right: 0.35rem; }
+.parish-upcoming-sep { margin: 0 0.5rem; opacity: 0.5; }
+.parish-upcoming-arrow { color: var(--parish-blue); font-size: 1.1rem; }
+.parish-upcoming-footer { margin-top: 1.5rem; text-align: center; }
+@media (max-width: 640px) {
+    .parish-upcoming-link { grid-template-columns: 3.5rem 1fr; }
+    .parish-upcoming-arrow { display: none; }
+}
+
+/* ---------- Event detail page ---------- */
+.parish-event-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    color: var(--parish-navy);
+    margin: 0.5rem 0 1.25rem;
+    line-height: 1.15;
+}
+.parish-event-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--parish-cream-warm);
+    border-left: 4px solid var(--parish-gold);
+    padding: 1rem 1.25rem;
+    border-radius: 0 0.35rem 0.35rem 0;
+    margin-bottom: 1.75rem;
+}
+.parish-event-meta-row { display: flex; align-items: center; gap: 0.75rem; color: var(--parish-navy); }
+.parish-event-meta-row i { color: var(--parish-gold); width: 1.1rem; }
+.parish-event-flyer { margin: 0 0 1.75rem; }
+.parish-event-flyer img { max-width: 100%; height: auto; border-radius: 0.5rem; display: block; }
+.parish-event-body { font-size: 1.05rem; line-height: 1.65; }
+.parish-event-actions { margin-top: 2.5rem; }
 .parish-church-tagline {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;

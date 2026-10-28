@@ -69,6 +69,15 @@ func (h *PageHandler) Render(c *gin.Context) {
 	var page models.Page
 	err := h.db.Where("slug = ?", slug).First(&page).Error
 	if err != nil {
+		// Event detail: /events-news/<slug>/ looks up the Event row by its
+		// trailing slug and renders the event-detail template. Must come
+		// before shortAliases so an event doesn't get mis-redirected to a
+		// page with the same final segment.
+		if eventSlug := strings.TrimPrefix(slug, "events-news/"); eventSlug != slug && eventSlug != "" && !strings.Contains(eventSlug, "/") {
+			if h.renderEventDetail(c, eventSlug) {
+				return
+			}
+		}
 		// Fallback: short permalink → canonical nested slug.
 		if canonical := resolveShortAlias(h.db, slug); canonical != "" {
 			c.Redirect(http.StatusMovedPermanently, "/"+canonical+"/")
@@ -96,6 +105,27 @@ func (h *PageHandler) Render(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "page.html", data)
+}
+
+// renderEventDetail resolves slug to an Event row and renders the event
+// template. Returns true when it served the response (either a 200 render
+// or its own 404); false means the slug didn't match any event and the
+// caller should keep trying other fallbacks. The flyer asset is preloaded
+// so the template can render it inline.
+func (h *PageHandler) renderEventDetail(c *gin.Context, slug string) bool {
+	var ev models.Event
+	err := h.db.Preload("FlyerAsset").Where("slug = ?", slug).First(&ev).Error
+	if err != nil {
+		return false
+	}
+	data := gin.H{
+		"title":   ev.Title + " — Our Lady of the Valley Parish",
+		"page":    "event-detail",
+		"event":   ev,
+		"version": assetVersion,
+	}
+	c.HTML(http.StatusOK, "event.html", data)
+	return true
 }
 
 // resolveShortAlias returns the canonical slug for a shortcut URL, or empty.

@@ -66,6 +66,43 @@
     </div>
 </section>
 
+{{if .upcomingEvents}}
+<section id="upcoming" class="parish-section parish-upcoming">
+    <div class="parish-container">
+        <header class="parish-section-head">
+            <p class="parish-eyebrow">Join us</p>
+            <h2 class="parish-section-title">Upcoming Parish Events</h2>
+        </header>
+        <ul class="parish-upcoming-list">
+            {{range .upcomingEvents}}
+            <li class="parish-upcoming-item">
+                <a href="/events-news/{{.Slug}}/" class="parish-upcoming-link">
+                    <div class="parish-upcoming-date">
+                        <span class="parish-upcoming-day">{{.StartsAt.Format "2"}}</span>
+                        <span class="parish-upcoming-month">{{.StartsAt.Format "Jan"}}</span>
+                    </div>
+                    <div class="parish-upcoming-text">
+                        <h3 class="parish-upcoming-title">{{.Title}}{{if .Featured}} <span class="parish-upcoming-badge">Featured</span>{{end}}</h3>
+                        <p class="parish-upcoming-meta">
+                            <i class="fas fa-clock"></i> {{.StartsAt.Format "Monday · 3:04 PM"}}
+                            {{if .Location}}<span class="parish-upcoming-sep">·</span><i class="fas fa-location-dot"></i> {{.Location}}{{end}}
+                        </p>
+                    </div>
+                    <i class="fas fa-arrow-right parish-upcoming-arrow" aria-hidden="true"></i>
+                </a>
+            </li>
+            {{end}}
+        </ul>
+        <div class="parish-upcoming-footer">
+            <a href="/events-news/calendar/" class="parish-btn parish-btn-ghost">
+                <i class="fas fa-calendar"></i>
+                View full calendar
+            </a>
+        </div>
+    </div>
+</section>
+{{end}}
+
 <section id="courier" class="parish-section parish-section-tinted">
     <div class="parish-container parish-two-col">
         <div>
