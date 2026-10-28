@@ -32,6 +32,7 @@ func main() {
 	runImport := flag.Bool("import", false, "Scrape pages and assets from the live olv14843.org site into this DB, then exit")
 	importURL := flag.String("import-url", "", "With --import: import just this URL (e.g. /about/) instead of the whole list")
 	importLimit := flag.Int("import-limit", 0, "With --import: stop after N pages (0 = all)")
+	seedHistory := flag.Bool("seed-history", false, "Upsert the /about/our-history/ parish-history page and exit")
 	flag.Parse()
 
 	if err := godotenv.Load(); err != nil {
@@ -126,6 +127,19 @@ func main() {
 			Verbose:   true,
 		}); err != nil {
 			log.Fatalf("Import failed: %v", err)
+		}
+		return
+	}
+
+	if *seedHistory {
+		if db == nil {
+			log.Fatal("Cannot seed history: no database connection")
+		}
+		if err := database.EnsureContentSchema(db); err != nil {
+			log.Fatalf("Cannot seed history: ensure content schema: %v", err)
+		}
+		if err := database.SeedHistoryPage(db); err != nil {
+			log.Fatalf("Seed history failed: %v", err)
 		}
 		return
 	}
