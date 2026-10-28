@@ -29,6 +29,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	publicHandler := handlers.NewPublicHandler(db)
 	scheduleHandler := handlers.NewScheduleHandler(db)
+	calendarHandler := handlers.NewCalendarHandler(db)
 	registrationHandler := handlers.NewRegistrationHandler(db, cfg)
 
 	// ---------- Public ----------
@@ -39,6 +40,10 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// Parish registration — explicit routes shadow the CMS catch-all.
 	router.GET("/about/parish-registration", registrationHandler.FormPage)
 	router.GET("/about/parish-registration/", registrationHandler.FormPage)
+
+	// Parish calendar — reads from our Events table, editable via /admin/events.
+	router.GET("/events-news/calendar", calendarHandler.Calendar)
+	router.GET("/events-news/calendar/", calendarHandler.Calendar)
 
 	// Mass + confession pages are their own authoritative source.
 	router.GET("/liturgy-and-sacraments/mass-times", scheduleHandler.MassTimesPage)

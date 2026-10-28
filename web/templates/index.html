@@ -99,6 +99,58 @@
     </div>
 </section>
 
+<section class="parish-churches">
+    <div class="parish-container">
+        <header class="parish-section-head">
+            <p class="parish-eyebrow">Visit us</p>
+            <h2 class="parish-section-title">Our Two Churches</h2>
+            <p class="parish-prose" style="max-width: 42rem; margin: 0.75rem auto 0;">
+                Mass is celebrated weekly at both of our historic churches. Visitors are always welcome.
+            </p>
+        </header>
+        <div class="parish-churches-grid">
+            <article class="parish-church-card">
+                <div class="parish-church-photo">
+                    {{if .stAnnPhoto}}
+                    <img src="{{.stAnnPhoto.URL}}" alt="St. Ann's Church, Hornell" loading="lazy">
+                    {{else}}
+                    <i class="fas fa-church parish-church-photo-placeholder" aria-hidden="true"></i>
+                    {{end}}
+                </div>
+                <div class="parish-church-text">
+                    <h3 class="parish-church-name">St. Ann's Church</h3>
+                    <address class="parish-church-address">
+                        27 Erie Avenue<br>
+                        Hornell, NY 14843
+                    </address>
+                    <a href="https://www.google.com/maps/search/?api=1&amp;query=27+Erie+Avenue+Hornell+NY+14843" target="_blank" rel="noopener" class="parish-church-directions">
+                        Get directions <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </article>
+            <article class="parish-church-card">
+                <div class="parish-church-photo">
+                    {{if .stMaryPhoto}}
+                    <img src="{{.stMaryPhoto.URL}}" alt="St. Mary's Church, Rexville" loading="lazy">
+                    {{else}}
+                    <i class="fas fa-church parish-church-photo-placeholder" aria-hidden="true"></i>
+                    {{end}}
+                </div>
+                <div class="parish-church-text">
+                    <h3 class="parish-church-name">St. Mary's Church</h3>
+                    <address class="parish-church-address">
+                        Main Street<br>
+                        Rexville, NY 14877
+                    </address>
+                    <a href="https://www.google.com/maps/search/?api=1&amp;query=St+Mary+Church+Rexville+NY+14877" target="_blank" rel="noopener" class="parish-church-directions">
+                        Get directions <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+
 <section id="about" class="parish-section">
     <div class="parish-container">
         <header class="parish-section-head">

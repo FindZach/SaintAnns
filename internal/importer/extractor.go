@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	htmlpkg "html"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -14,6 +15,7 @@ import (
 
 	"golang.org/x/net/html"
 )
+
 
 // fetchHTML gets a page and parses it. 15-second timeout to keep imports from
 // hanging on slow pages.
@@ -129,13 +131,13 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		if sameAsTitle(textOf(n), e.page.Title) {
 			return nil, true // skip the page title
 		}
-		return makeHeading(2, textOf(n)), true
+		return e.headingOrProse(2, n), true
 	case "h2":
-		return makeHeading(2, textOf(n)), true
+		return e.headingOrProse(2, n), true
 	case "h3":
-		return makeHeading(3, textOf(n)), true
+		return e.headingOrProse(3, n), true
 	case "h4", "h5", "h6":
-		return makeHeading(4, textOf(n)), true
+		return e.headingOrProse(4, n), true
 
 	case "img":
 		return e.imageBlock(n), true
@@ -507,6 +509,39 @@ func makeHeading(level int, text string) *models.Block {
 	}
 	data, _ := json.Marshal(headingData{Level: level, Text: text})
 	return &models.Block{Type: models.BlockHeading, Data: data}
+}
+
+// headingOrProse decides whether a WordPress h2/h3/h4 is really a heading or a
+// paragraph that the editor made "larger text" by abusing a heading tag. If
+// the text is long (>90 chars) or carries multiple sentences, we emit it as a
+// rich_text block instead so it renders as body copy. This caught the RCIA
+// page whose "heading" was a 200-char explanation of the sacrament.
+func (e *extractor) headingOrProse(level int, n *html.Node) *models.Block {
+	txt := strings.TrimSpace(textOf(n))
+	if txt == "" {
+		return nil
+	}
+	if looksLikeProse(txt) {
+		inner := strings.TrimSpace(renderInnerHTML(n))
+		if inner == "" {
+			inner = htmlpkg.EscapeString(txt)
+		}
+		data, _ := json.Marshal(richTextData{HTML: e.rewriteLinks("<p>" + inner + "</p>")})
+		return &models.Block{Type: models.BlockRichText, Data: data}
+	}
+	return makeHeading(level, txt)
+}
+
+// looksLikeProse detects headings that are really paragraphs: long text, or
+// two-plus sentence terminators.
+func looksLikeProse(s string) bool {
+	if len(s) > 90 {
+		return true
+	}
+	n := strings.Count(s, ". ") + strings.Count(s, "? ") + strings.Count(s, "! ")
+	// Also count a trailing single period as one terminator so "A longer
+	// sentence that just ends." still looks like one sentence (not prose).
+	return n >= 2
 }
 
 func makeVideo(provider, src string) *models.Block {

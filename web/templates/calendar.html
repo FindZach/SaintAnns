@@ -1,0 +1,53 @@
+{{define "calendar.html"}}{{template "base" .}}{{end}}
+
+{{define "calendar-content"}}
+<section class="parish-section">
+    <div class="parish-container">
+        <header class="parish-section-head" style="text-align: left; margin-bottom: 2rem;">
+            <p class="parish-eyebrow">Events</p>
+            <h1 class="parish-section-title">Parish Calendar</h1>
+            <p class="parish-prose">Upcoming events at Our Lady of the Valley Parish. Add an event through Admin → Events; it shows up here automatically.</p>
+        </header>
+
+        {{if .groups}}
+            {{range .groups}}
+            <section class="parish-calendar-month" id="m-{{.Key}}">
+                <h2 class="parish-calendar-month-title">{{.Label}}</h2>
+                <ul class="parish-calendar-list">
+                    {{range .Events}}
+                    <li class="parish-calendar-event">
+                        <div class="parish-calendar-date">
+                            <span class="parish-calendar-day">{{.StartsAt.Format "2"}}</span>
+                            <span class="parish-calendar-dow">{{.StartsAt.Format "Mon"}}</span>
+                        </div>
+                        <div class="parish-calendar-body">
+                            <h3 class="parish-calendar-event-title">
+                                <a href="/events-news/{{.Slug}}/">{{.Title}}</a>
+                                {{if .Featured}}<span class="parish-calendar-badge">Featured</span>{{end}}
+                            </h3>
+                            <p class="parish-calendar-meta">
+                                <time datetime="{{.StartsAt.Format "2006-01-02T15:04"}}">{{.StartsAt.Format "3:04 PM"}}</time>
+                                {{if .EndsAt}} – <time datetime="{{.EndsAt.Format "2006-01-02T15:04"}}">{{.EndsAt.Format "3:04 PM"}}</time>{{end}}
+                                {{if .Location}} &middot; <span>{{.Location}}</span>{{end}}
+                            </p>
+                            {{if .Body}}<p class="parish-calendar-desc">{{.Body}}</p>{{end}}
+                        </div>
+                        {{with .FlyerAsset}}
+                        <a class="parish-calendar-flyer" href="{{.URL}}" target="_blank" rel="noopener">
+                            <img src="{{.URL}}" alt="Event flyer" loading="lazy">
+                        </a>
+                        {{end}}
+                    </li>
+                    {{end}}
+                </ul>
+            </section>
+            {{end}}
+        {{else}}
+            <div class="parish-calendar-empty">
+                <p class="parish-prose">No upcoming events have been posted yet.</p>
+                <p class="parish-prose">Watch for updates in the bulletin, or <a href="/contact/">reach out to the parish office</a>.</p>
+            </div>
+        {{end}}
+    </div>
+</section>
+{{end}}

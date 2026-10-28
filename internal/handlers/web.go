@@ -11,6 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// Ensure imports stay referenced in case of future conditional use.
+var _ = models.AssetImage
+
 // assetVersion is passed to templates as "version" and appended to the CSS and
 // JS URLs. It changes on every deploy, so browsers fetch fresh assets after a
 // release instead of reusing stale cached copies.
@@ -40,14 +43,45 @@ func (h *PublicHandler) Home(c *gin.Context) {
 	massGroups := groupMassByChurch(LoadMassSchedule(h.db))
 	confessions := LoadConfessionTimes(h.db)
 	headlines := LoadCourierHeadlines(h.db, 5)
+	stAnn, stMary := LoadChurchPhotos(h.db)
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"title":           "Our Lady of the Valley Parish",
 		"page":            "home",
 		"massGroups":      massGroups,
 		"confessionTimes": confessions,
 		"headlines":       headlines,
+		"stAnnPhoto":      stAnn,
+		"stMaryPhoto":     stMary,
 		"version":         assetVersion,
 	})
+}
+
+// LoadChurchPhotos returns the single best exterior photo for each church,
+// picking the largest-byte-size image whose stored path matches a known
+// church-name pattern. Returns nil for one or both if nothing matches, in
+// which case the template falls back to a placeholder — admins can then
+// upload a photo via /admin/assets.
+func LoadChurchPhotos(db *gorm.DB) (stAnn, stMary *models.Asset) {
+	if db == nil {
+		return nil, nil
+	}
+	stAnn = loadBestAssetMatching(db, []string{"%stannhornell%", "%st-ann%", "%st_ann%"})
+	stMary = loadBestAssetMatching(db, []string{"%stmaryrexville%", "%st-mary%", "%st_mary%"})
+	return stAnn, stMary
+}
+
+func loadBestAssetMatching(db *gorm.DB, patterns []string) *models.Asset {
+	for _, pat := range patterns {
+		var a models.Asset
+		q := db.Where("kind = ? AND original_name ILIKE ?", models.AssetImage, pat).
+			Or("kind = ? AND path ILIKE ?", models.AssetImage, pat).
+			Order("byte_size DESC").
+			Limit(1)
+		if err := q.First(&a).Error; err == nil {
+			return &a
+		}
+	}
+	return nil
 }
 
 func (h *PublicHandler) Contact(c *gin.Context) {
