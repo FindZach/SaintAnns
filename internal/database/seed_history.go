@@ -117,21 +117,10 @@ func historyBlocks() models.Blocks {
 `, year, title, body))
 	}
 
-	// Illustration banner: a section-opener card with an inline SVG scene,
-	// caption, and a note that staff can replace with a real photograph via
-	// the admin editor. Each scene is themed to its section.
-	illustration := func(svg, caption string) models.Block {
-		return rich(fmt.Sprintf(`
-<figure style="margin:1.5rem 0 2rem;background:linear-gradient(135deg,#1e3a5f 0%%,#0f1e30 100%%);border-radius:6px;padding:1.75rem 1.5rem 1.25rem;text-align:center;box-shadow:0 8px 24px rgba(15,30,48,0.18);">
-    %s
-    <figcaption style="color:#faf6ef;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.05rem;margin-top:1rem;letter-spacing:0.02em;">%s</figcaption>
-</figure>
-`, svg, caption))
-	}
-
-	// Photo banner: a real photograph with a styled caption, used wherever we
-	// have an actual exterior shot. The dark gradient border matches the
-	// illustration banners so the two blend into one visual series.
+	// Photo banner: a real photograph with a styled caption. Used for every
+	// visual anchor in the article now that we have real photos for each
+	// section — three parish photos from olv14843.org plus one of the
+	// Federation Building from Wikimedia Commons.
 	photo := func(src, alt, caption string) models.Block {
 		return rich(fmt.Sprintf(`
 <figure style="margin:1.5rem 0 2rem;background:#1e3a5f;border-radius:6px;padding:0.5rem 0.5rem 1.1rem;text-align:center;box-shadow:0 8px 24px rgba(15,30,48,0.18);overflow:hidden;">
@@ -141,60 +130,8 @@ func historyBlocks() models.Blocks {
 `, src, alt, caption))
 	}
 
-	// Four themed SVG scenes. All sit in a 320x160 viewBox with navy sky
-	// behind so they feel like a series, and the parish's gold accent for
-	// highlights.
-	svgFarmhouse := `<svg viewBox="0 0 320 160" width="100%" height="160" aria-hidden="true" style="display:block;margin:0 auto;max-width:420px;">
-    <circle cx="260" cy="40" r="18" fill="#d4af37" opacity="0.3"/>
-    <circle cx="260" cy="40" r="12" fill="#d4af37" opacity="0.6"/>
-    <path d="M60 130 L60 90 L100 90 L100 130 Z M100 90 L100 70 L140 70 L140 130 L100 130 Z" fill="#faf6ef" opacity="0.14"/>
-    <path d="M60 90 L80 70 L100 90 Z M100 70 L120 55 L140 70 Z" fill="#d4af37" opacity="0.75"/>
-    <rect x="112" y="95" width="16" height="35" fill="#1e3a5f" opacity="0.7" stroke="#d4af37" stroke-width="0.5"/>
-    <rect x="70" y="105" width="12" height="12" fill="#d4af37" opacity="0.6"/>
-    <path d="M120 50 L120 60 M115 55 L125 55" stroke="#d4af37" stroke-width="2"/>
-    <path d="M10 130 L310 130" stroke="#d4af37" stroke-width="0.5" opacity="0.3"/>
-    <path d="M20 135 Q40 132 60 135 M240 135 Q270 133 300 135" stroke="#d4af37" stroke-width="0.5" opacity="0.4" fill="none"/>
-</svg>`
-
-	// (svgChurch was replaced by the real exterior photo for the 1869 section.)
-
-	svgFederation := `<svg viewBox="0 0 320 160" width="100%" height="160" aria-hidden="true" style="display:block;margin:0 auto;max-width:420px;">
-    <path d="M70 60 L160 30 L250 60 Z" fill="#d4af37" opacity="0.25"/>
-    <path d="M70 60 L250 60" stroke="#d4af37" stroke-width="1.5"/>
-    <path d="M70 60 L160 30 L250 60" fill="none" stroke="#d4af37" stroke-width="1.5"/>
-    <path d="M100 60 L100 125 M135 60 L135 125 M170 60 L170 125 M205 60 L205 125" stroke="#d4af37" stroke-width="2.5" opacity="0.9"/>
-    <rect x="70" y="125" width="180" height="12" fill="#d4af37" opacity="0.6"/>
-    <rect x="60" y="137" width="200" height="4" fill="#d4af37" opacity="0.5"/>
-    <path d="M100 60 L100 55 L105 55 L105 60 M130 60 L130 55 L140 55 L140 60 M165 60 L165 55 L175 55 L175 60 M200 60 L200 55 L210 55 L210 60" stroke="#d4af37" stroke-width="1" fill="none"/>
-    <path d="M160 20 L160 32" stroke="#d4af37" stroke-width="1.5"/>
-    <path d="M156 24 L164 24" stroke="#d4af37" stroke-width="1.5"/>
-    <path d="M10 141 L310 141" stroke="#d4af37" stroke-width="0.5" opacity="0.3"/>
-</svg>`
-
-	svgJubilee := `<svg viewBox="0 0 320 160" width="100%" height="160" aria-hidden="true" style="display:block;margin:0 auto;max-width:420px;">
-    <g transform="translate(160 80)">
-        <g stroke="#d4af37" stroke-width="1" opacity="0.5">
-            <line x1="0" y1="-60" x2="0" y2="-45"/>
-            <line x1="30" y1="-52" x2="22" y2="-38"/>
-            <line x1="52" y1="-30" x2="38" y2="-22"/>
-            <line x1="60" y1="0" x2="45" y2="0"/>
-            <line x1="52" y1="30" x2="38" y2="22"/>
-            <line x1="30" y1="52" x2="22" y2="38"/>
-            <line x1="0" y1="60" x2="0" y2="45"/>
-            <line x1="-30" y1="52" x2="-22" y2="38"/>
-            <line x1="-52" y1="30" x2="-38" y2="22"/>
-            <line x1="-60" y1="0" x2="-45" y2="0"/>
-            <line x1="-52" y1="-30" x2="-38" y2="-22"/>
-            <line x1="-30" y1="-52" x2="-22" y2="-38"/>
-        </g>
-        <circle r="30" fill="none" stroke="#d4af37" stroke-width="1.5"/>
-        <circle r="22" fill="#faf6ef" opacity="0.95"/>
-        <text y="4" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="14" font-weight="600" fill="#1e3a5f" letter-spacing="0.05em">IHS</text>
-        <line x1="0" y1="-30" x2="0" y2="-42" stroke="#d4af37" stroke-width="1.5"/>
-        <line x1="-5" y1="-37" x2="5" y2="-37" stroke="#d4af37" stroke-width="1.5"/>
-    </g>
-    <text x="160" y="150" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="20" font-weight="600" fill="#d4af37" letter-spacing="0.1em">175 · 1843–2026</text>
-</svg>`
+	// (All SVG illustrations were replaced with real photographs — see each
+	// section below.)
 
 	return models.Blocks{
 		heading(1, "A History of Faith in the Southern Tier"),
@@ -208,7 +145,9 @@ func historyBlocks() models.Blocks {
 			"Father Benedict Bayer celebrates Mass in the home of Thomas Doorley, near Webb's Crossing. Doorley will later mortgage his farm to help build the church."),
 
 		heading(2, "Early Origins (1843–1851)"),
-		illustration(svgFarmhouse, "A farmhouse near Webb's Crossing — the first home of the parish, 1843"),
+		photo("/static/images/churches/st-ann-statue.jpg",
+			"Statue of St. Ann teaching the Blessed Virgin Mary",
+			"St. Ann, mother of the Blessed Virgin Mary — the parish's patron since the first Mass was celebrated in her name in 1843"),
 		rich(`
 <p>Catholic missionary activity in the Hornellsville area began in the 1840s, when <strong>Redemptorist priests</strong> rode circuit to minister to the Irish immigrant laborers building the railroads of western New York. In <strong>1843</strong>, Father Benedict Bayer celebrated the first Mass in the area in the home of Thomas Doorley, near Webb's Crossing — a farmhouse that would be remembered as the cradle of the parish.</p>
 <p>Doorley became the first subscriber to the church building fund in 1849, mortgaging his farm to help put a roof over the altar. That same year — after the <strong>Diocese of Buffalo</strong> was established in 1847 and Bishop John Timon appointed <strong>Reverend Michael O'Brien</strong> as first pastor — the parish was formally organized and a first church was built at the northwest corner of Cass and Buffalo Streets.</p>
@@ -232,7 +171,9 @@ func historyBlocks() models.Blocks {
 			"Parishioners complete the Neoclassical community hall designed by Otis Dockstader. It is added to the National Register of Historic Places in 2001."),
 
 		heading(2, "A Parish in a Growing City (1910–2000)"),
-		illustration(svgFederation, "The St. Ann's Federation Building — Neoclassical, 1910–1912 — added to the National Register in 2001"),
+		photo("/static/images/churches/federation-building.jpg",
+			"St. Ann's Federation Building at 38 Broadway, Hornell",
+			"The St. Ann's Federation Building at 38 Broadway, Hornell — Otis Dockstader, 1910–1912 — added to the National Register of Historic Places in 2001"),
 		rich(`
 <p>As Hornell's railroad economy flourished, so did the parish. Between <strong>1910 and 1912</strong>, parishioners built the <strong>St. Ann's Federation Building</strong> — a community center with an auditorium and dance hall designed by architect Otis Dockstader in the Neoclassical style. The building, which still stands near the church, was added to the <strong>National Register of Historic Places in 2001</strong>.</p>
 <p>In 1998, St. Ann's was clustered with three neighboring parishes: <strong>St. Mary in Rexville</strong>, St. Ignatius Loyola in Hornell, and St. Joachim in Canisteo. In <strong>2004</strong>, those four communities were reorganized into a single parish — <strong>Our Lady of the Valley</strong>. St. Joachim and St. Ignatius Loyola were later closed; the parish today encompasses the historic churches of St. Ann in Hornell and St. Mary in Rexville. A <strong>perpetual adoration chapel</strong> has operated on the St. Ann's campus since 2001.</p>
@@ -247,7 +188,9 @@ func historyBlocks() models.Blocks {
 			"St. Mary's Church in Rexville — the parish's second home, part of Our Lady of the Valley since 2004"),
 
 		heading(2, "The 175th Jubilee (2025–2026)"),
-		illustration(svgJubilee, "The 175th Jubilee monstrance — 1843–2026"),
+		photo("/static/images/churches/st-mary-stained-glass.jpg",
+			"Stained glass window of the Visitation of Mary to Elizabeth",
+			"Stained glass at St. Mary's, Rexville — the Visitation of Mary to Elizabeth, a fitting image for a Jubilee honoring Sts. Joachim and Anne"),
 		rich(`
 <p>The parish observed a <strong>year-long 175th Jubilee</strong>, culminating on <strong>July 26, 2026</strong> — the Feast of Saints Joachim and Anne — with a Mass celebrated by <strong>Bishop John S. Bonnici</strong> of the Diocese of Rochester.</p>
 <p>Jubilee events included:</p>
