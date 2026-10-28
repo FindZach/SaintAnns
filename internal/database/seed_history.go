@@ -27,16 +27,13 @@ func SeedHistoryPage(db *gorm.DB) error {
 	}
 	log.Println("Seeding parish history page at /about/our-history/ ...")
 
-	// Pick the biggest St. Ann exterior photo already in the Asset library so
-	// the page has a hero image. Excludes signs / chapel / adoration shots so
-	// we don't accidentally pick the Perpetual Adoration Chapel sign as a
-	// stand-in for the church exterior. Falls back to no-image (asset_id=0)
-	// if nothing matches, in which case staff can drop one in via the admin
-	// editor and the public page silently omits the hero figure.
-	heroAssetID := findBestAssetByPatternsExcluding(db,
-		[]string{"%stannhornell%exterior%", "%stannhornell%church%", "%st-ann%exterior%", "%stannhornell%"},
-		[]string{"%adoration%", "%chapel%", "%sign%", "%monstrance%"},
-	)
+	// Hero is always a placeholder slot: WordPress filenames don't tell us
+	// which St. Ann image is the church exterior vs. the Perpetual Adoration
+	// Chapel sign, and automatic matches have been wrong. Public page silently
+	// omits the figure until admin opens /admin/pages/about/our-history/,
+	// clicks the hero image slot, and picks a true exterior from the asset
+	// picker (or uploads a new one — public-domain postcards work well).
+	heroAssetID := uint(0)
 
 	blocks := historyBlocks(heroAssetID)
 
@@ -83,25 +80,6 @@ func SeedHistoryPage(db *gorm.DB) error {
 	return nil
 }
 
-// findBestAssetByPatternsExcluding returns the ID of the largest image whose
-// original_name or path matches any of the include patterns AND matches none
-// of the exclude patterns, or 0 if nothing qualifies. Patterns are tried in
-// order; first include-pattern with any match wins. All matching is case-
-// insensitive (ILIKE).
-func findBestAssetByPatternsExcluding(db *gorm.DB, include, exclude []string) uint {
-	for _, pat := range include {
-		q := db.Where("kind = ? AND (original_name ILIKE ? OR path ILIKE ?)",
-			models.AssetImage, pat, pat)
-		for _, ex := range exclude {
-			q = q.Where("original_name NOT ILIKE ? AND path NOT ILIKE ?", ex, ex)
-		}
-		var a models.Asset
-		if err := q.Order("byte_size DESC").Limit(1).First(&a).Error; err == nil {
-			return a.ID
-		}
-	}
-	return 0
-}
 
 // historyBlocks is the canonical ordered block list for the history page.
 // Kept here (not in a template) so it round-trips through the admin editor:
