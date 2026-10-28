@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -159,7 +160,7 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		}
 		// Otherwise emit the <p>'s rendered HTML as a rich_text block.
 		if h := strings.TrimSpace(renderInnerHTML(n)); h != "" {
-			data, _ := json.Marshal(richTextData{HTML: rewriteParishLinks("<p>" + h + "</p>")})
+			data, _ := json.Marshal(richTextData{HTML: e.rewriteLinks("<p>" + h + "</p>")})
 			return &models.Block{Type: models.BlockRichText, Data: data}, true
 		}
 		return nil, true
@@ -174,7 +175,7 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		var buf bytes.Buffer
 		if err := html.Render(&buf, n); err == nil {
 			if h := strings.TrimSpace(buf.String()); h != "" {
-				data, _ := json.Marshal(richTextData{HTML: rewriteParishLinks(h)})
+				data, _ := json.Marshal(richTextData{HTML: e.rewriteLinks(h)})
 				return &models.Block{Type: models.BlockRichText, Data: data}, true
 			}
 		}
@@ -184,7 +185,7 @@ func (e *extractor) leafBlock(n *html.Node, tag string) (*models.Block, bool) {
 		var buf bytes.Buffer
 		if err := html.Render(&buf, n); err == nil {
 			if h := strings.TrimSpace(buf.String()); h != "" {
-				data, _ := json.Marshal(richTextData{HTML: rewriteParishLinks(h)})
+				data, _ := json.Marshal(richTextData{HTML: e.rewriteLinks(h)})
 				return &models.Block{Type: models.BlockRichText, Data: data}, true
 			}
 		}
@@ -547,16 +548,53 @@ var parishDomains = []string{
 	"http://olv14843.org",
 }
 
-// rewriteParishLinks rewrites every href= and src= that points to the parish's
-// own domain into a root-relative path. Called on all rendered rich_text HTML
-// before it is persisted so imported links resolve on the new deploy instead
-// of sending visitors back to the live site.
-func rewriteParishLinks(h string) string {
+// wpContentPattern catches URLs that point into the live site's uploads tree,
+// in any attribute. Captures the group that follows the domain so we can turn
+// it into a usable source URL for download.
+var wpContentPattern = regexp.MustCompile(`https?://(?:www\.)?olv14843\.org(/wp-content/[^"'<>\s)]+)`)
+
+// rewriteLinks fixes up a rendered rich_text block:
+//   - Downloads any /wp-content/* file referenced inline (href= or src=) and
+//     rewrites the URL to the locally-stored Asset path, so inline PDFs,
+//     images and audio continue to work after the DNS cutover.
+//   - Strips the parish's own domain from the rest of the links so page→page
+//     navigation stays on the new deploy.
+//
+// External links (Diocese of Rochester, Catholic Courier, etc.) are untouched.
+func (e *extractor) rewriteLinks(h string) string {
+	// First pass: find every olv14843.org/wp-content URL and swap it for a
+	// local Asset URL. downloadAsset dedups by source URL across runs.
+	h = wpContentPattern.ReplaceAllStringFunc(h, func(match string) string {
+		m := wpContentPattern.FindStringSubmatch(match)
+		if len(m) < 2 {
+			return match
+		}
+		path := strings.ToLower(m[1])
+		kind := models.AssetImage
+		switch {
+		case strings.HasSuffix(path, ".pdf"):
+			kind = models.AssetPDF
+		case strings.HasSuffix(path, ".mp3"), strings.HasSuffix(path, ".m4a"):
+			kind = models.AssetAudio
+		case strings.HasSuffix(path, ".mp4"):
+			kind = models.AssetVideo
+		}
+		assetID, err := e.imp.downloadAsset(match, kind)
+		if err != nil || assetID == 0 {
+			return match
+		}
+		var asset models.Asset
+		if err := e.imp.db.First(&asset, assetID).Error; err != nil || asset.Path == "" {
+			return match
+		}
+		return asset.URL()
+	})
+
+	// Second pass: strip parish domain from any remaining href/src so page
+	// links become root-relative.
 	for _, d := range parishDomains {
-		// Full URL with path (keep the leading slash as our relative path).
 		h = strings.ReplaceAll(h, `href="`+d+`/`, `href="/`)
 		h = strings.ReplaceAll(h, `src="`+d+`/`, `src="/`)
-		// Bare domain with no path (rare; collapse to root).
 		h = strings.ReplaceAll(h, `href="`+d+`"`, `href="/"`)
 		h = strings.ReplaceAll(h, `src="`+d+`"`, `src="/"`)
 	}

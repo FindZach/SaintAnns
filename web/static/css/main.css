@@ -702,6 +702,29 @@ a:hover { color: var(--parish-navy); }
     width: 100%; height: 100%; border: 0;
 }
 .parish-block-cta { margin: 2rem 0; }
+.parish-block-child-pages {
+    list-style: none; padding: 0; margin: 1.5rem 0;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.parish-block-child-pages li {
+    background: var(--parish-cream);
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    transition: all 0.15s ease;
+}
+.parish-block-child-pages li:hover {
+    border-color: var(--parish-blue);
+    background: var(--parish-blue-soft);
+}
+.parish-block-child-pages a {
+    color: var(--parish-navy);
+    font-weight: 500;
+    display: block;
+}
+.parish-block-child-pages-intro { color: var(--parish-muted); margin: 1.5rem 0 0.5rem; }
 .parish-block-event-list, .parish-block-bulletin-list { list-style: none; padding: 0; margin: 1.5rem 0; }
 .parish-block-event-list li, .parish-block-bulletin-list li {
     padding: 0.75rem 0; border-bottom: 1px dashed var(--parish-rule);

@@ -72,6 +72,7 @@ const (
 	BlockCTAButton     = "cta_button"
 	BlockDivider       = "divider"
 	BlockHTMLRaw       = "html_raw"
+	BlockChildPages    = "child_pages" // auto-lists published Page rows under a given parent_slug
 )
 
 // Page is a freeform page composed of ordered blocks. The slug matches the

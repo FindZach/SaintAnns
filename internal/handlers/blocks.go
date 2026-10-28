@@ -52,6 +52,8 @@ func RenderBlocks(blocks models.Blocks, db *gorm.DB) template.HTML {
 			out.WriteString(`<hr class="parish-block-divider">`)
 		case models.BlockHTMLRaw:
 			renderHTMLRaw(&out, block.Data)
+		case models.BlockChildPages:
+			renderChildPages(&out, block.Data, db)
 		default:
 			// Unknown block types render as an admin-visible comment, not a 500.
 			fmt.Fprintf(&out, "<!-- unknown block type: %s -->", html.EscapeString(block.Type))
@@ -345,6 +347,44 @@ func renderBulletinList(out *strings.Builder, raw json.RawMessage, db *gorm.DB) 
 			html.EscapeString(href),
 			html.EscapeString(b.PublishedOn.Format("January 2, 2006")),
 			html.EscapeString(b.Label))
+	}
+	out.WriteString(`</ul>`)
+}
+
+type childPagesData struct {
+	ParentSlug string `json:"parent_slug"`
+	Intro      string `json:"intro"`
+}
+
+// renderChildPages lists every published Page whose ParentSlug matches the
+// block's parent_slug. Used by the importer for hub pages (/minstries/,
+// /faith-formation/, etc.) that have no body of their own on the live site but
+// link to several sub-pages.
+func renderChildPages(out *strings.Builder, raw json.RawMessage, db *gorm.DB) {
+	if db == nil {
+		return
+	}
+	var d childPagesData
+	_ = json.Unmarshal(raw, &d)
+	if d.ParentSlug == "" {
+		return
+	}
+	var children []models.Page
+	if err := db.Where("parent_slug = ? AND published_at IS NOT NULL AND published_at <= NOW()", d.ParentSlug).
+		Order("title ASC").Find(&children).Error; err != nil || len(children) == 0 {
+		return
+	}
+	if d.Intro != "" {
+		fmt.Fprintf(out, `<p class="parish-block-child-pages-intro">%s</p>`, html.EscapeString(d.Intro))
+	}
+	out.WriteString(`<ul class="parish-block-child-pages">`)
+	for _, c := range children {
+		label := c.NavLabel
+		if label == "" {
+			label = c.Title
+		}
+		fmt.Fprintf(out, `<li><a href="/%s/">%s</a></li>`,
+			html.EscapeString(c.Slug), html.EscapeString(label))
 	}
 	out.WriteString(`</ul>`)
 }

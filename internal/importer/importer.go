@@ -196,8 +196,26 @@ func (imp *importer) importPage(p pageSpec) error {
 		return err
 	}
 	if len(blocks) == 0 {
-		raw, _ := json.Marshal(map[string]string{"html": "<p>Content from the live site could not be extracted. Edit this page in the admin to add content.</p>"})
-		blocks = models.Blocks{{Type: models.BlockRichText, Data: raw}}
+		// Prefer a dynamic child_pages list when this is a hub page whose
+		// subpages the pages[] table knows about — covers /minstries/,
+		// /faith-formation/, /liturgy-and-sacraments/ and similar.
+		hasChildren := false
+		for _, other := range pages {
+			if other.ParentSlug == p.Slug && !other.Skip {
+				hasChildren = true
+				break
+			}
+		}
+		if hasChildren {
+			raw, _ := json.Marshal(map[string]string{
+				"parent_slug": p.Slug,
+				"intro":       "Browse the ministries and groups below.",
+			})
+			blocks = models.Blocks{{Type: models.BlockChildPages, Data: raw}}
+		} else {
+			raw, _ := json.Marshal(map[string]string{"html": "<p>Content from the live site could not be extracted. Edit this page in the admin to add content.</p>"})
+			blocks = models.Blocks{{Type: models.BlockRichText, Data: raw}}
+		}
 	}
 
 	log.Printf("[page] %s → %d blocks", p.Slug, len(blocks))
