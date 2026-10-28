@@ -106,15 +106,29 @@ func seedPages(db *gorm.DB) error {
 		{"faith-formation", "", "Faith Formation", "Faith Formation",
 			"Faith formation for children, youth, adults and candidates for the Rite of Christian Initiation."},
 		{"events-news", "", "Events & News", "Events & News",
-			"Upcoming parish events and recent news. Replace with a short welcome; the event list is pulled in automatically."},
+			"Upcoming parish events and recent news. Edit this page in the admin to add your own welcome; the live event list below updates whenever an event is added under Admin → Events."},
 	}
 
 	placeholderBlocks := func(text string) models.Blocks {
 		data, _ := json.Marshal(map[string]string{"html": "<p>" + text + "</p>"})
 		return models.Blocks{{Type: models.BlockRichText, Data: data}}
 	}
+	// events-news is the one seed page that gets a dynamic block alongside its
+	// placeholder, so the "live list" promise is actually true out of the box.
+	eventsNewsBlocks := func(text string) models.Blocks {
+		intro, _ := json.Marshal(map[string]string{"html": "<p>" + text + "</p>"})
+		eventList, _ := json.Marshal(map[string]interface{}{"limit": 10})
+		return models.Blocks{
+			{Type: models.BlockRichText, Data: intro},
+			{Type: models.BlockEventList, Data: eventList},
+		}
+	}
 
 	for _, s := range seeds {
+		blocks := placeholderBlocks(s.placeholder)
+		if s.slug == "events-news" {
+			blocks = eventsNewsBlocks(s.placeholder)
+		}
 		var existing models.Page
 		err := db.Where("slug = ?", s.slug).First(&existing).Error
 		if err == gorm.ErrRecordNotFound {
@@ -123,7 +137,7 @@ func seedPages(db *gorm.DB) error {
 				ParentSlug:  s.parent,
 				Title:       s.title,
 				NavLabel:    s.nav,
-				Blocks:      placeholderBlocks(s.placeholder),
+				Blocks:      blocks,
 				PublishedAt: &now,
 			}
 			if err := db.Create(&page).Error; err != nil {

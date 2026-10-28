@@ -14,6 +14,7 @@ import (
 	"olv-parish/internal/config"
 	"olv-parish/internal/database"
 	"olv-parish/internal/handlers"
+	"olv-parish/internal/importer"
 	"olv-parish/internal/middleware"
 	"olv-parish/internal/models"
 	"olv-parish/internal/routes"
@@ -28,6 +29,9 @@ func main() {
 	forceMigrate := flag.Bool("force-migrate", false, "Force run database migrations (development mode)")
 	seedOnly := flag.Bool("seed", false, "Insert baseline parish content (Mass times, nav, starter pages) and exit")
 	createAdmin := flag.Bool("create-admin", false, "Upsert the user named by $ADMIN_EMAIL + $ADMIN_PASSWORD as role=admin and exit")
+	runImport := flag.Bool("import", false, "Scrape pages and assets from the live olv14843.org site into this DB, then exit")
+	importURL := flag.String("import-url", "", "With --import: import just this URL (e.g. /about/) instead of the whole list")
+	importLimit := flag.Int("import-limit", 0, "With --import: stop after N pages (0 = all)")
 	flag.Parse()
 
 	if err := godotenv.Load(); err != nil {
@@ -105,6 +109,23 @@ func main() {
 		}
 		if err := bootstrapAdmin(db); err != nil {
 			log.Fatalf("Create admin failed: %v", err)
+		}
+		return
+	}
+
+	if *runImport {
+		if db == nil {
+			log.Fatal("Cannot import: no database connection")
+		}
+		if err := database.EnsureContentSchema(db); err != nil {
+			log.Fatalf("Cannot import: ensure content schema: %v", err)
+		}
+		if err := importer.Run(db, importer.Options{
+			SingleURL: *importURL,
+			Limit:     *importLimit,
+			Verbose:   true,
+		}); err != nil {
+			log.Fatalf("Import failed: %v", err)
 		}
 		return
 	}
