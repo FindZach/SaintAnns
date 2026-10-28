@@ -87,30 +87,16 @@ func historyBlocks() models.Blocks {
 		return models.Block{Type: models.BlockDivider, Data: data}
 	}
 
-	// Hero banner: inline SVG stained-glass window motif over a deep-navy
-	// gradient, with the 1843–2026 jubilee framing. Styles are inline so no
-	// CSS change is required.
+	// Hero banner: real photograph of the St. Ann facade behind a navy
+	// gradient overlay that keeps the 1843–2026 jubilee framing readable.
+	// Styles are inline so no CSS change is required.
 	hero := rich(`
-<div class="parish-history-hero" style="position:relative;background:linear-gradient(135deg,#1e3a5f 0%,#0f1e30 100%);color:#faf6ef;padding:3.5rem 2rem;margin:1.5rem 0 2.5rem;border-radius:6px;text-align:center;overflow:hidden;box-shadow:0 10px 30px rgba(15,30,48,0.25);">
-    <svg viewBox="0 0 100 140" width="88" height="124" aria-hidden="true" style="display:block;margin:0 auto 1.25rem;opacity:0.95;">
-        <defs>
-            <linearGradient id="olvGlass" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#d4af37"/>
-                <stop offset="1" stop-color="#9c7a1f"/>
-            </linearGradient>
-        </defs>
-        <path d="M50 5 A45 45 0 0 1 95 50 L95 135 L5 135 L5 50 A45 45 0 0 1 50 5 Z" fill="url(#olvGlass)" opacity="0.18"/>
-        <path d="M50 15 A35 35 0 0 1 85 50 L85 125 L15 125 L15 50 A35 35 0 0 1 50 15 Z" fill="none" stroke="#d4af37" stroke-width="1.5"/>
-        <line x1="50" y1="20" x2="50" y2="120" stroke="#d4af37" stroke-width="1"/>
-        <line x1="20" y1="70" x2="80" y2="70" stroke="#d4af37" stroke-width="1"/>
-        <circle cx="50" cy="50" r="7" fill="none" stroke="#d4af37" stroke-width="1.5"/>
-        <path d="M50 43 L50 57 M43 50 L57 50" stroke="#d4af37" stroke-width="1.5"/>
-    </svg>
-    <p style="font-family:'Inter',sans-serif;letter-spacing:0.32em;font-size:0.78rem;margin:0;text-transform:uppercase;opacity:0.85;">Our Lady of the Valley Parish</p>
-    <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.25rem,5vw,3.25rem);line-height:1.1;margin:0.5rem 0 0.75rem;font-weight:500;color:#faf6ef;">A History of Faith</h2>
-    <p style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;margin:0;letter-spacing:0.05em;opacity:0.95;">
+<div class="parish-history-hero" style="position:relative;background:linear-gradient(135deg,rgba(15,30,48,0.78) 0%,rgba(30,58,95,0.72) 100%),url('/static/images/churches/st-ann-facade.jpg') center/cover no-repeat;color:#faf6ef;padding:4rem 2rem;margin:1.5rem 0 2.5rem;border-radius:6px;text-align:center;overflow:hidden;box-shadow:0 10px 30px rgba(15,30,48,0.25);">
+    <p style="font-family:'Inter',sans-serif;letter-spacing:0.32em;font-size:0.78rem;margin:0;text-transform:uppercase;color:#ffffff;opacity:0.95;">Our Lady of the Valley Parish</p>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.25rem,5vw,3.5rem);line-height:1.1;margin:0.5rem 0 0.75rem;font-weight:500;color:#ffffff;text-shadow:0 2px 10px rgba(0,0,0,0.3);">A History of Faith</h2>
+    <p style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;margin:0;letter-spacing:0.08em;color:#ffffff;">
         <span style="color:#d4af37;font-weight:600;">1843</span>
-        <span style="margin:0 0.5rem;opacity:0.6;">·</span>
+        <span style="margin:0 0.6rem;opacity:0.7;">·</span>
         <span style="color:#d4af37;font-weight:600;">2026</span>
     </p>
     <p style="font-size:1rem;margin:0.75rem 0 0;color:#ffffff;letter-spacing:0.04em;font-weight:500;">175 Years in the Southern Tier</p>
@@ -143,6 +129,18 @@ func historyBlocks() models.Blocks {
 `, svg, caption))
 	}
 
+	// Photo banner: a real photograph with a styled caption, used wherever we
+	// have an actual exterior shot. The dark gradient border matches the
+	// illustration banners so the two blend into one visual series.
+	photo := func(src, alt, caption string) models.Block {
+		return rich(fmt.Sprintf(`
+<figure style="margin:1.5rem 0 2rem;background:#1e3a5f;border-radius:6px;padding:0.5rem 0.5rem 1.1rem;text-align:center;box-shadow:0 8px 24px rgba(15,30,48,0.18);overflow:hidden;">
+    <img src="%s" alt="%s" loading="lazy" style="width:100%%;height:auto;max-height:420px;object-fit:cover;border-radius:4px;display:block;">
+    <figcaption style="color:#faf6ef;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.05rem;margin-top:0.85rem;padding:0 0.75rem;letter-spacing:0.02em;">%s</figcaption>
+</figure>
+`, src, alt, caption))
+	}
+
 	// Four themed SVG scenes. All sit in a 320x160 viewBox with navy sky
 	// behind so they feel like a series, and the parish's gold accent for
 	// highlights.
@@ -158,19 +156,7 @@ func historyBlocks() models.Blocks {
     <path d="M20 135 Q40 132 60 135 M240 135 Q270 133 300 135" stroke="#d4af37" stroke-width="0.5" opacity="0.4" fill="none"/>
 </svg>`
 
-	svgChurch := `<svg viewBox="0 0 320 160" width="100%" height="160" aria-hidden="true" style="display:block;margin:0 auto;max-width:420px;">
-    <rect x="80" y="90" width="160" height="50" fill="#faf6ef" opacity="0.12"/>
-    <path d="M80 90 L160 35 L240 90 Z" fill="#faf6ef" opacity="0.1"/>
-    <rect x="150" y="55" width="20" height="60" fill="#1e3a5f" stroke="#d4af37" stroke-width="1"/>
-    <path d="M160 45 L160 55 M155 50 L165 50" stroke="#d4af37" stroke-width="1.5"/>
-    <path d="M110 115 L110 95 Q110 85 120 85 Q130 85 130 95 L130 115 Z" fill="url(#churchGlass)" opacity="0.85" stroke="#faf6ef" stroke-width="0.75"/>
-    <path d="M190 115 L190 95 Q190 85 200 85 Q210 85 210 95 L210 115 Z" fill="url(#churchGlass)" opacity="0.85" stroke="#faf6ef" stroke-width="0.75"/>
-    <circle cx="160" cy="95" r="9" fill="none" stroke="#d4af37" stroke-width="1.25"/>
-    <path d="M160 88 L160 102 M153 95 L167 95" stroke="#d4af37" stroke-width="1"/>
-    <rect x="152" y="118" width="16" height="22" fill="#2c1810" stroke="#d4af37" stroke-width="0.5"/>
-    <path d="M10 140 L310 140" stroke="#d4af37" stroke-width="0.5" opacity="0.3"/>
-    <defs><linearGradient id="churchGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4af37"/><stop offset="1" stop-color="#8a6a1e"/></linearGradient></defs>
-</svg>`
+	// (svgChurch was replaced by the real exterior photo for the 1869 section.)
 
 	svgFederation := `<svg viewBox="0 0 320 160" width="100%" height="160" aria-hidden="true" style="display:block;margin:0 auto;max-width:420px;">
     <path d="M70 60 L160 30 L250 60 Z" fill="#d4af37" opacity="0.25"/>
@@ -233,7 +219,9 @@ func historyBlocks() models.Blocks {
 			"On April 11, Father Michael Creedon dedicates the French Gothic Revival Church of St. Ann on Erie Avenue. Its 1870s pipe organ still sounds today."),
 
 		heading(2, "A New Church and a Parish School (1860s–1890s)"),
-		illustration(svgChurch, "The Church of St. Ann in the French Gothic Revival style — dedicated April 11, 1869"),
+		photo("/static/images/churches/st-ann-exterior.jpg",
+			"St. Ann's Church, Hornell",
+			"St. Ann's Church, 27 Erie Avenue, Hornell — dedicated April 11, 1869"),
 		rich(`
 <p>By 1860 the congregation had outgrown its first home. <strong>Father Michael Creedon</strong> arrived as pastor and set about building a church to match the parish's growth. The <strong>cornerstone was laid in 1868</strong>, and on <strong>April 11, 1869</strong>, the present Church of St. Ann was dedicated. The building is designed in the <em>French Gothic Revival</em> style — soaring pointed arches, a steep slate roof, a bell tower rising above Erie Avenue. A major addition was completed in <strong>1889</strong>, giving the church its current footprint. The sanctuary still houses its original <strong>1870s pipe organ</strong>.</p>
 <p>Father Creedon also founded <strong>St. Ann School</strong> in 1863 — the beginning of Catholic education in Hornell. A larger school building opened in 1890 with capacity for roughly 300 students; a wing was added in 1962. The school served generations of families until it closed for financial reasons in 2012. The parish responded by opening <strong>St. Ann's Academy</strong> in 2013, continuing the educational mission in a new form.</p>
@@ -253,6 +241,10 @@ func historyBlocks() models.Blocks {
 
 		milestone("2004", "Our Lady of the Valley",
 			"St. Ann (Hornell), St. Mary (Rexville), St. Ignatius Loyola, and St. Joachim merge into a single parish. A perpetual adoration chapel opens on the St. Ann campus."),
+
+		photo("/static/images/churches/st-mary-exterior.jpg",
+			"St. Mary's Church, Rexville",
+			"St. Mary's Church in Rexville — the parish's second home, part of Our Lady of the Valley since 2004"),
 
 		heading(2, "The 175th Jubilee (2025–2026)"),
 		illustration(svgJubilee, "The 175th Jubilee monstrance — 1843–2026"),
