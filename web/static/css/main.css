@@ -1146,6 +1146,69 @@ a:hover { color: var(--parish-navy); }
 .parish-event-flyer img { max-width: 100%; height: auto; border-radius: 0.5rem; display: block; }
 .parish-event-body { font-size: 1.05rem; line-height: 1.65; }
 .parish-event-actions { margin-top: 2.5rem; }
+
+/* ---------- Homily page ---------- */
+.parish-homily-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    color: var(--parish-navy);
+    margin: 0.5rem 0 0.75rem;
+    line-height: 1.15;
+}
+.parish-homily-meta {
+    color: #555;
+    font-size: 0.95rem;
+    margin: 0 0 1.75rem;
+}
+.parish-homily-meta i { color: var(--parish-gold); margin-right: 0.5rem; }
+.parish-homily-sep { margin: 0 0.5rem; opacity: 0.5; }
+.parish-homily-media {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+}
+.parish-homily-body { font-size: 1.05rem; line-height: 1.7; }
+.parish-homily-archive {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e0d2;
+}
+.parish-homily-archive-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    color: var(--parish-navy);
+    margin: 0 0 1rem;
+}
+.parish-homily-archive-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.parish-homily-archive-list li {
+    padding: 0.65rem 0;
+    border-bottom: 1px dotted #e5e0d2;
+    color: #333;
+}
+.parish-homily-archive-list time { color: var(--parish-gold); font-weight: 600; }
+.parish-homily-archive-sep { margin: 0 0.5rem; opacity: 0.4; }
+.parish-homily-archive-author { color: #777; margin-left: 0.5rem; font-style: italic; }
+.parish-homily-empty {
+    background: var(--parish-cream-warm);
+    border-left: 4px solid var(--parish-gold);
+    padding: 2rem 1.5rem;
+    border-radius: 0 0.35rem 0.35rem 0;
+    margin: 1.5rem 0;
+    text-align: center;
+}
+.parish-homily-empty i {
+    font-size: 2.5rem;
+    color: var(--parish-gold);
+    opacity: 0.7;
+    display: block;
+    margin-bottom: 1rem;
+}
+.parish-homily-empty p { margin: 0.5rem 0; color: var(--parish-navy); }
 .parish-church-tagline {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;

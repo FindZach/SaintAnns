@@ -56,17 +56,20 @@ func LoadPublicNav(db *gorm.DB) []NavEntry {
 	return out
 }
 
-// loadNavChildren returns every published descendant page under parentSlug,
-// plus any hand-added extraChildren, sorted by depth then nav_label so the
-// most direct children appear first.
+// loadNavChildren returns the direct children of parentSlug (not grandchildren),
+// plus any hand-added extraChildren, sorted alphabetically. If more items exist
+// than will fit comfortably in a dropdown, the first N show + a "See all →"
+// overflow link to the hub page where every item is listed as a card.
+//
+// We deliberately don't walk grandchildren here (so Sacraments doesn't list
+// all 7 individual sacraments in the nav — the hub page's child_pages block
+// does that with icons and descriptions). Keeps the dropdowns scannable.
 func loadNavChildren(db *gorm.DB, parentSlug string) []NavEntry {
 	var pages []models.Page
-	// Direct children (parent_slug = X) plus one more level (parent_slug like X/%)
-	// gives us e.g. all 7 sacraments nested under /liturgy-and-sacraments/sacraments.
 	if err := db.Where(
-		"(parent_slug = ? OR parent_slug LIKE ?) AND published_at IS NOT NULL AND published_at <= NOW()",
-		parentSlug, parentSlug+"/%",
-	).Order("slug ASC").Find(&pages).Error; err != nil {
+		"parent_slug = ? AND published_at IS NOT NULL AND published_at <= NOW()",
+		parentSlug,
+	).Order("COALESCE(NULLIF(nav_label, ''), title) ASC").Find(&pages).Error; err != nil {
 		pages = nil
 	}
 
@@ -88,24 +91,27 @@ func loadNavChildren(db *gorm.DB, parentSlug string) []NavEntry {
 	}
 	// Append extra child routes (e.g. Calendar, Mass Times) that aren't Page rows.
 	for _, extra := range extraChildren[parentSlug] {
-		children = append(children, extra)
+		if !seen[strings.Trim(extra.Href, "/")] {
+			children = append(children, extra)
+		}
 	}
 
-	// Sort by depth (fewer slashes = closer to parent) then label so hub
-	// pages like "Sacraments" come before the 7 individual sacraments.
+	// Final alphabetical sort so extraChildren interleave with Page rows
+	// instead of always sitting at the bottom.
 	sort.SliceStable(children, func(i, j int) bool {
-		di := strings.Count(children[i].Href, "/") - 2 // discount leading + trailing
-		dj := strings.Count(children[j].Href, "/") - 2
-		if di != dj {
-			return di < dj
-		}
-		return children[i].Label < children[j].Label
+		return strings.ToLower(children[i].Label) < strings.ToLower(children[j].Label)
 	})
 
-	// Cap to keep dropdowns scannable.
-	const maxDropdown = 14
+	// Cap at 7 for scannability. When truncated, surface a "See all →" link
+	// to the hub page so nothing is hidden — just moved one click deeper.
+	const maxDropdown = 7
 	if len(children) > maxDropdown {
+		seeAll := NavEntry{
+			Label: "See all →",
+			Href:  "/" + parentSlug + "/",
+		}
 		children = children[:maxDropdown]
+		children = append(children, seeAll)
 	}
 	return children
 }

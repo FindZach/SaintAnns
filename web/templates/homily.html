@@ -1,0 +1,65 @@
+{{define "homily.html"}}{{template "base" .}}{{end}}
+
+{{define "homily-content"}}
+<section class="parish-section parish-homily">
+    <div class="parish-container" style="max-width: 48rem;">
+        <p class="parish-eyebrow">Weekend Homily</p>
+
+        {{if .hasHomily}}
+        {{with .homily}}
+        <h1 class="parish-homily-title">{{.Title}}</h1>
+        <p class="parish-homily-meta">
+            <i class="fas fa-calendar-day" aria-hidden="true"></i>
+            {{.PreachedOn.Format "Sunday, January 2, 2006"}}
+            {{if .Author}}<span class="parish-homily-sep">·</span>{{.Author}}{{end}}
+        </p>
+
+        {{if or .AudioURL .VideoURL}}
+        <div class="parish-homily-media">
+            {{if .AudioURL}}
+            <a href="{{.AudioURL}}" target="_blank" rel="noopener" class="parish-btn parish-btn-ghost">
+                <i class="fas fa-headphones"></i>
+                Listen
+            </a>
+            {{end}}
+            {{if .VideoURL}}
+            <a href="{{.VideoURL}}" target="_blank" rel="noopener" class="parish-btn parish-btn-ghost">
+                <i class="fas fa-play-circle"></i>
+                Watch
+            </a>
+            {{end}}
+        </div>
+        {{end}}
+
+        {{if .Body}}
+        <div class="parish-homily-body parish-prose" style="white-space: pre-wrap;">{{.Body}}</div>
+        {{end}}
+        {{end}}
+
+        {{if .recent}}
+        <div class="parish-homily-archive">
+            <h2 class="parish-homily-archive-title">Recent homilies</h2>
+            <ul class="parish-homily-archive-list">
+                {{range .recent}}
+                <li>
+                    <time>{{.PreachedOn.Format "Jan 2, 2006"}}</time>
+                    <span class="parish-homily-archive-sep">·</span>
+                    <strong>{{.Title}}</strong>
+                    {{if .Author}}<span class="parish-homily-archive-author">{{.Author}}</span>{{end}}
+                </li>
+                {{end}}
+            </ul>
+        </div>
+        {{end}}
+
+        {{else}}
+        <h1 class="parish-homily-title">Last Weekend's Homily</h1>
+        <div class="parish-homily-empty">
+            <i class="fas fa-dove" aria-hidden="true"></i>
+            <p>Last weekend's homily will appear here once it has been posted. Check back on Monday.</p>
+            <p class="parish-prose-small">In the meantime, you can read Catholic Courier reflections at <a href="https://catholiccourier.com/" target="_blank" rel="noopener">catholiccourier.com</a>.</p>
+        </div>
+        {{end}}
+    </div>
+</section>
+{{end}}

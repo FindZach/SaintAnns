@@ -66,6 +66,15 @@ func (h *PageHandler) Render(c *gin.Context) {
 		return
 	}
 
+	// Dynamic overrides: these slugs have Page rows left from the WordPress
+	// import, but we render them from live DB tables instead so staff edits
+	// via /admin/homilies etc. actually show up.
+	switch slug {
+	case "liturgy-and-sacraments/last-weekends-homily":
+		h.renderLatestHomily(c)
+		return
+	}
+
 	var page models.Page
 	err := h.db.Where("slug = ?", slug).First(&page).Error
 	if err != nil {
@@ -105,6 +114,33 @@ func (h *PageHandler) Render(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "page.html", data)
+}
+
+// renderLatestHomily serves /liturgy-and-sacraments/last-weekends-homily/,
+// pulling the most recent Homily by preached_on date. If staff have posted
+// more than one, the next few show as a "Recent homilies" list below.
+func (h *PageHandler) renderLatestHomily(c *gin.Context) {
+	var latest models.Homily
+	err := h.db.Order("preached_on DESC").Limit(1).First(&latest).Error
+	hasHomily := err == nil
+
+	var recent []models.Homily
+	if hasHomily {
+		_ = h.db.Where("id <> ?", latest.ID).
+			Order("preached_on DESC").
+			Limit(6).
+			Find(&recent).Error
+	}
+
+	data := gin.H{
+		"title":     "Last Weekend's Homily — Our Lady of the Valley Parish",
+		"page":      "homily",
+		"hasHomily": hasHomily,
+		"homily":    latest,
+		"recent":    recent,
+		"version":   assetVersion,
+	}
+	c.HTML(http.StatusOK, "homily.html", data)
 }
 
 // renderEventDetail resolves slug to an Event row and renders the event
