@@ -56,14 +56,19 @@ func NewAdminAssetsHandler(db *gorm.DB) *AdminAssetsHandler {
 // is populated via APIList over fetch so staff can upload, filter, and
 // delete without a page reload.
 func (h *AdminAssetsHandler) LibraryPage(c *gin.Context) {
-	userValue, _ := c.Get("user")
-	user, _ := userValue.(models.User)
+	user, _ := c.Get("user")
+	// The admin sidebar reads .unreadMessages — matching the shape every
+	// other admin page's pageData helper produces, so the badge renders
+	// (and template execution doesn't fail on a nil comparison).
+	var unread int64
+	h.db.Model(&models.ContactMessage{}).Where("read_at IS NULL").Count(&unread)
 
 	data := gin.H{
 		"title":          "Asset Library — Admin — OLV Parish",
 		"page":           "admin-assets",
 		"version":        assetVersion,
 		"user":           user,
+		"unreadMessages": unread,
 		"maxUploadBytes": maxUploadBytes,
 		"maxUploadLabel": fmt.Sprintf("%d MB", maxUploadBytes/(1024*1024)),
 	}
