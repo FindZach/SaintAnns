@@ -777,4 +777,175 @@
     function hide(el) { if (el) el.hidden = true; }
     function showError(el, msg) { if (!el) return; el.textContent = msg; el.hidden = false; }
 
+    // ---------- Asset Library (/admin/assets) ----------
+    (function initAssetLibrary() {
+        const grid = document.getElementById('asset-grid');
+        if (!grid) return;
+
+        const uploadInput = document.getElementById('asset-upload-input');
+        const uploadStatus = document.getElementById('asset-upload-status');
+        const search = document.getElementById('asset-search');
+        const filterBtns = document.querySelectorAll('.parish-asset-filter-btn');
+        const toast = document.getElementById('asset-toast');
+        const toastText = document.getElementById('asset-toast-text');
+
+        let allAssets = [];
+        let activeKind = '';
+        let activeQuery = '';
+
+        function assetIcon(kind) {
+            if (kind === 'pdf') return 'fa-file-pdf';
+            if (kind === 'audio') return 'fa-music';
+            if (kind === 'video') return 'fa-video';
+            return 'fa-image';
+        }
+
+        function render() {
+            if (allAssets.length === 0) {
+                grid.innerHTML = '<p class="parish-admin-empty">No assets uploaded yet. Click "Upload file" to get started.</p>';
+                return;
+            }
+            const q = activeQuery.trim().toLowerCase();
+            const filtered = allAssets.filter(a => {
+                if (activeKind && a.kind !== activeKind) return false;
+                if (q && !((a.original_name || '').toLowerCase().includes(q) ||
+                           (a.url || '').toLowerCase().includes(q))) return false;
+                return true;
+            });
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p class="parish-admin-empty">No matches. Try a different filter or search.</p>';
+                return;
+            }
+            grid.innerHTML = filtered.map(a => {
+                const name = escapeHtml(a.original_name || a.url.split('/').pop());
+                const url = escapeHtml(a.url);
+                const preview = a.kind === 'image'
+                    ? `<img src="${url}" alt="${escapeHtml(a.alt_text || name)}" loading="lazy">`
+                    : `<div class="parish-asset-tile-icon"><i class="fas ${assetIcon(a.kind)}"></i></div>`;
+                const dims = (a.kind === 'image' && a.width && a.height)
+                    ? `<span class="parish-asset-tile-dims">${a.width}×${a.height}</span>` : '';
+                return `
+                    <article class="parish-asset-tile" data-id="${a.id}" data-url="${url}" data-kind="${a.kind}">
+                        <div class="parish-asset-tile-preview">${preview}</div>
+                        <div class="parish-asset-tile-meta">
+                            <p class="parish-asset-tile-name" title="${name}">${name}</p>
+                            <p class="parish-asset-tile-sub">${a.kind}${dims ? ' · ' + dims : ''}</p>
+                        </div>
+                        <div class="parish-asset-tile-actions">
+                            <button type="button" class="parish-admin-link" data-action="copy-url">
+                                <i class="fas fa-link"></i> Copy URL
+                            </button>
+                            <a href="${url}" target="_blank" rel="noopener" class="parish-admin-link">
+                                <i class="fas fa-arrow-up-right-from-square"></i> Open
+                            </a>
+                            <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-asset">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </article>`;
+            }).join('');
+        }
+
+        async function reload() {
+            try {
+                const res = await fetch('/api/v1/admin/assets', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('Failed to load assets');
+                const data = await res.json();
+                allAssets = data.assets || [];
+                render();
+            } catch (err) {
+                grid.innerHTML = `<p class="parish-admin-empty">Could not load assets: ${escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        function showToast(msg) {
+            if (!toast) return;
+            if (toastText) toastText.textContent = msg;
+            toast.hidden = false;
+            setTimeout(() => { toast.hidden = true; }, 1800);
+        }
+
+        async function uploadOne(file) {
+            if (uploadStatus) uploadStatus.textContent = `Uploading ${file.name}…`;
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch('/api/v1/admin/assets', { method: 'POST', body: fd, credentials: 'same-origin' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `Upload failed (${res.status})`);
+            }
+            return res.json();
+        }
+
+        if (uploadInput) {
+            uploadInput.addEventListener('change', async () => {
+                const files = Array.from(uploadInput.files || []);
+                if (files.length === 0) return;
+                let okCount = 0;
+                for (const file of files) {
+                    try {
+                        await uploadOne(file);
+                        okCount++;
+                    } catch (err) {
+                        if (uploadStatus) uploadStatus.textContent = `${file.name}: ${err.message}`;
+                    }
+                }
+                if (uploadStatus) uploadStatus.textContent = `Uploaded ${okCount} of ${files.length}.`;
+                uploadInput.value = '';
+                await reload();
+                setTimeout(() => { if (uploadStatus) uploadStatus.textContent = ''; }, 3500);
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.toggle('is-active', b === btn));
+                activeKind = btn.getAttribute('data-filter') || '';
+                render();
+            });
+        });
+
+        if (search) {
+            search.addEventListener('input', () => {
+                activeQuery = search.value;
+                render();
+            });
+        }
+
+        grid.addEventListener('click', async (ev) => {
+            const copyBtn = ev.target.closest('[data-action="copy-url"]');
+            const delBtn = ev.target.closest('[data-action="delete-asset"]');
+            const tile = ev.target.closest('.parish-asset-tile');
+            if (!tile) return;
+            const url = tile.getAttribute('data-url');
+            const id = tile.getAttribute('data-id');
+            if (copyBtn) {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    showToast('URL copied to clipboard');
+                } catch (err) {
+                    showToast('Could not copy — select the URL manually');
+                }
+                return;
+            }
+            if (delBtn) {
+                if (!confirm('Delete this asset? It will stop appearing on any page that references it.')) return;
+                const res = await fetch('/api/v1/admin/assets/' + id, { method: 'DELETE', credentials: 'same-origin' });
+                if (res.ok) {
+                    allAssets = allAssets.filter(a => String(a.id) !== String(id));
+                    render();
+                } else {
+                    alert('Delete failed.');
+                }
+                return;
+            }
+        });
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        reload();
+    })();
+
 })();

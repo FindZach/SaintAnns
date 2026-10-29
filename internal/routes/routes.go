@@ -113,6 +113,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 			adminPages.GET("/mass-times", adminStructured.MassTimesPage)
 			adminPages.GET("/confessions", adminStructured.ConfessionsPage)
 			adminPages.GET("/registrations", adminStructured.RegistrationsPage)
+			adminPages.GET("/assets", adminAssetsHandler.LibraryPage)
 		}
 
 		// Admin API. OptionalAuthMiddleware reads either the Bearer header or

@@ -97,6 +97,7 @@
         {{else if eq .page "admin-homilies"}}{{template "admin-homilies-content" .}}
         {{else if eq .page "admin-bulletins"}}{{template "admin-bulletins-content" .}}
         {{else if eq .page "admin-events"}}{{template "admin-events-content" .}}
+        {{else if eq .page "admin-assets"}}{{template "admin-assets-content" .}}
         {{else}}<p class="parish-container parish-section">Page content not found.</p>{{end}}
     </main>
 
@@ -143,7 +144,7 @@
     <div id="toast-region" class="parish-toast-region" aria-live="polite"></div>
 
     <script src="/static/js/main.js?v={{.version}}"></script>
-    {{if or (eq .page "admin") (eq .page "admin-messages") (eq .page "admin-pages") (eq .page "admin-page-edit") (eq .page "admin-mass-times") (eq .page "admin-confessions") (eq .page "admin-homilies") (eq .page "admin-bulletins") (eq .page "admin-events") (eq .page "admin-registrations")}}
+    {{if or (eq .page "admin") (eq .page "admin-messages") (eq .page "admin-pages") (eq .page "admin-page-edit") (eq .page "admin-mass-times") (eq .page "admin-confessions") (eq .page "admin-homilies") (eq .page "admin-bulletins") (eq .page "admin-events") (eq .page "admin-registrations") (eq .page "admin-assets")}}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="/static/js/admin.js?v={{.version}}"></script>
     {{end}}

@@ -52,6 +52,24 @@ func NewAdminAssetsHandler(db *gorm.DB) *AdminAssetsHandler {
 	return &AdminAssetsHandler{db: db}
 }
 
+// LibraryPage renders /admin/assets, the asset library UI. The grid itself
+// is populated via APIList over fetch so staff can upload, filter, and
+// delete without a page reload.
+func (h *AdminAssetsHandler) LibraryPage(c *gin.Context) {
+	userValue, _ := c.Get("user")
+	user, _ := userValue.(models.User)
+
+	data := gin.H{
+		"title":          "Asset Library — Admin — OLV Parish",
+		"page":           "admin-assets",
+		"version":        assetVersion,
+		"user":           user,
+		"maxUploadBytes": maxUploadBytes,
+		"maxUploadLabel": fmt.Sprintf("%d MB", maxUploadBytes/(1024*1024)),
+	}
+	c.HTML(http.StatusOK, "admin-assets.html", data)
+}
+
 // APIList returns the asset library (optionally filtered by kind=image|pdf).
 func (h *AdminAssetsHandler) APIList(c *gin.Context) {
 	q := h.db.Order("created_at DESC").Limit(500)

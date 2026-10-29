@@ -1,0 +1,48 @@
+{{define "admin-assets.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-assets-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Asset Library</h1>
+            <p class="parish-admin-subtitle">
+                Upload photos, PDFs, audio, and video. Click any item to copy its URL —
+                then paste it into a page, a homily's PDF link, or an event flyer.
+            </p>
+            <label for="asset-upload-input" class="parish-btn parish-btn-primary parish-admin-head-action">
+                <i class="fas fa-cloud-arrow-up"></i> Upload file
+            </label>
+            <input type="file" id="asset-upload-input" multiple hidden
+                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,audio/mpeg,audio/mp4,video/mp4">
+        </header>
+
+        <section class="parish-admin-panel">
+            <div class="parish-asset-toolbar">
+                <div class="parish-asset-filter" role="tablist" aria-label="Filter by kind">
+                    <button type="button" class="parish-asset-filter-btn is-active" data-filter="">All</button>
+                    <button type="button" class="parish-asset-filter-btn" data-filter="image">Images</button>
+                    <button type="button" class="parish-asset-filter-btn" data-filter="pdf">PDFs</button>
+                    <button type="button" class="parish-asset-filter-btn" data-filter="audio">Audio</button>
+                    <button type="button" class="parish-asset-filter-btn" data-filter="video">Video</button>
+                </div>
+                <div class="parish-asset-search">
+                    <input type="search" id="asset-search" placeholder="Search by filename…" aria-label="Search assets">
+                </div>
+            </div>
+
+            <p id="asset-upload-status" class="parish-admin-subtitle" aria-live="polite"></p>
+
+            <div id="asset-grid" class="parish-asset-grid" aria-live="polite">
+                <p class="parish-admin-empty">Loading…</p>
+            </div>
+        </section>
+
+        <!-- Copy toast -->
+        <div id="asset-toast" class="parish-asset-toast" hidden>
+            <i class="fas fa-check"></i>
+            <span id="asset-toast-text">URL copied</span>
+        </div>
+    </main>
+</div>
+{{end}}
