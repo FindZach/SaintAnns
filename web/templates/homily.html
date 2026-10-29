@@ -14,8 +14,14 @@
             {{if .Author}}<span class="parish-homily-sep">·</span>{{.Author}}{{end}}
         </p>
 
-        {{if or .AudioURL .VideoURL}}
+        {{if or .DocumentURL .AudioURL .VideoURL}}
         <div class="parish-homily-media">
+            {{if .DocumentURL}}
+            <a href="{{.DocumentURL}}" target="_blank" rel="noopener" class="parish-btn parish-btn-primary">
+                <i class="fas fa-file-pdf"></i>
+                Read
+            </a>
+            {{end}}
             {{if .AudioURL}}
             <a href="{{.AudioURL}}" target="_blank" rel="noopener" class="parish-btn parish-btn-ghost">
                 <i class="fas fa-headphones"></i>
@@ -44,7 +50,11 @@
                 <li>
                     <time>{{.PreachedOn.Format "Jan 2, 2006"}}</time>
                     <span class="parish-homily-archive-sep">·</span>
+                    {{if .DocumentURL}}
+                    <a href="{{.DocumentURL}}" target="_blank" rel="noopener"><strong>{{.Title}}</strong></a>
+                    {{else}}
                     <strong>{{.Title}}</strong>
+                    {{end}}
                     {{if .Author}}<span class="parish-homily-archive-author">{{.Author}}</span>{{end}}
                 </li>
                 {{end}}

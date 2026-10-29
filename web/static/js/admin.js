@@ -649,6 +649,7 @@
                         body: document.getElementById('homily-body').value,
                         audio_url: document.getElementById('homily-audio').value,
                         video_url: document.getElementById('homily-video').value,
+                        document_url: document.getElementById('homily-document').value,
                     },
                 });
                 window.location.reload();

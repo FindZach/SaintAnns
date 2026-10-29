@@ -33,6 +33,7 @@ func main() {
 	importURL := flag.String("import-url", "", "With --import: import just this URL (e.g. /about/) instead of the whole list")
 	importLimit := flag.Int("import-limit", 0, "With --import: stop after N pages (0 = all)")
 	seedHistory := flag.Bool("seed-history", false, "Upsert the /about/our-history/ parish-history page and exit")
+	migrateHomilies := flag.Bool("migrate-homilies", false, "Scan the imported last-weekends-homily Page row for PDF links and create Homily rows from them, then exit")
 	flag.Parse()
 
 	if err := godotenv.Load(); err != nil {
@@ -140,6 +141,22 @@ func main() {
 		}
 		if err := database.SeedHistoryPage(db); err != nil {
 			log.Fatalf("Seed history failed: %v", err)
+		}
+		return
+	}
+
+	if *migrateHomilies {
+		if db == nil {
+			log.Fatal("Cannot migrate homilies: no database connection")
+		}
+		if err := database.EnsureContentSchema(db); err != nil {
+			log.Fatalf("Cannot migrate homilies: ensure content schema: %v", err)
+		}
+		if err := database.Migrate(db); err != nil {
+			log.Fatalf("Cannot migrate homilies: schema migration: %v", err)
+		}
+		if err := database.MigrateHomiliesFromPage(db); err != nil {
+			log.Fatalf("Migrate homilies failed: %v", err)
 		}
 		return
 	}

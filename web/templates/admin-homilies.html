@@ -24,6 +24,7 @@
                     </div>
                     {{if .Body}}<p class="parish-admin-message-body">{{.Body}}</p>{{end}}
                     <div class="parish-admin-message-actions">
+                        {{if .DocumentURL}}<a href="{{.DocumentURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-file-pdf"></i> Document</a>{{end}}
                         {{if .AudioURL}}<a href="{{.AudioURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-headphones"></i> Audio</a>{{end}}
                         {{if .VideoURL}}<a href="{{.VideoURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-video"></i> Video</a>{{end}}
                         <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-homily">Delete</button>
@@ -64,6 +65,10 @@
                     <div class="parish-field">
                         <label for="homily-body">Body <span class="parish-field-optional">(optional)</span></label>
                         <textarea id="homily-body" name="body" rows="8"></textarea>
+                    </div>
+                    <div class="parish-field">
+                        <label for="homily-document">PDF / Document URL <span class="parish-field-optional">(optional — paste the asset URL from the asset library)</span></label>
+                        <input type="url" id="homily-document" name="document_url" placeholder="/static/uploads/legacy/…homily.pdf or https://…">
                     </div>
                     <div class="parish-form-row">
                         <div class="parish-field">

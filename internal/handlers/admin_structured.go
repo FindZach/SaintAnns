@@ -222,12 +222,13 @@ func (h *AdminStructuredHandler) HomiliesPage(c *gin.Context) {
 }
 
 type homilyRequest struct {
-	PreachedOn string `json:"preached_on" binding:"required"` // YYYY-MM-DD
-	Title      string `json:"title" binding:"required"`
-	Author     string `json:"author"`
-	Body       string `json:"body"`
-	AudioURL   string `json:"audio_url"`
-	VideoURL   string `json:"video_url"`
+	PreachedOn  string `json:"preached_on" binding:"required"` // YYYY-MM-DD
+	Title       string `json:"title" binding:"required"`
+	Author      string `json:"author"`
+	Body        string `json:"body"`
+	AudioURL    string `json:"audio_url"`
+	VideoURL    string `json:"video_url"`
+	DocumentURL string `json:"document_url"`
 }
 
 func (h *AdminStructuredHandler) HomilyAPICreate(c *gin.Context) {
@@ -244,6 +245,7 @@ func (h *AdminStructuredHandler) HomilyAPICreate(c *gin.Context) {
 	row := models.Homily{
 		PreachedOn: preached, Title: req.Title, Author: req.Author,
 		Body: req.Body, AudioURL: req.AudioURL, VideoURL: req.VideoURL,
+		DocumentURL: req.DocumentURL,
 	}
 	if err := h.db.Create(&row).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create"})
@@ -269,12 +271,13 @@ func (h *AdminStructuredHandler) HomilyAPIUpdate(c *gin.Context) {
 		return
 	}
 	updates := map[string]interface{}{
-		"preached_on": preached,
-		"title":       req.Title,
-		"author":      req.Author,
-		"body":        req.Body,
-		"audio_url":   req.AudioURL,
-		"video_url":   req.VideoURL,
+		"preached_on":  preached,
+		"title":        req.Title,
+		"author":       req.Author,
+		"body":         req.Body,
+		"audio_url":    req.AudioURL,
+		"video_url":    req.VideoURL,
+		"document_url": req.DocumentURL,
 	}
 	if err := h.db.Model(&models.Homily{}).Where("id = ?", id).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update"})

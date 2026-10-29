@@ -119,10 +119,35 @@ func (h *PageHandler) Render(c *gin.Context) {
 // renderLatestHomily serves /liturgy-and-sacraments/last-weekends-homily/,
 // pulling the most recent Homily by preached_on date. If staff have posted
 // more than one, the next few show as a "Recent homilies" list below.
+//
+// Fallback: if no Homily rows exist yet, we render the imported Page row's
+// blocks at that slug — the WordPress scrape left the historical PDF list
+// there, and showing it keeps the page useful until staff migrate the
+// homilies into the admin via --migrate-homilies.
 func (h *PageHandler) renderLatestHomily(c *gin.Context) {
 	var latest models.Homily
 	err := h.db.Order("preached_on DESC").Limit(1).First(&latest).Error
 	hasHomily := err == nil
+
+	if !hasHomily {
+		var fallback models.Page
+		if err := h.db.Where("slug = ?", "liturgy-and-sacraments/last-weekends-homily").
+			First(&fallback).Error; err == nil && fallback.IsPublished() {
+			rendered := RenderBlocks(fallback.Blocks, h.db)
+			data := gin.H{
+				"title":        fallback.Title + " — Our Lady of the Valley Parish",
+				"page":         "cms",
+				"pageData":     fallback,
+				"renderedBody": template.HTML(rendered),
+				"version":      assetVersion,
+			}
+			if fallback.MetaDescription != "" {
+				data["metaDescription"] = fallback.MetaDescription
+			}
+			c.HTML(http.StatusOK, "page.html", data)
+			return
+		}
+	}
 
 	var recent []models.Homily
 	if hasHomily {
