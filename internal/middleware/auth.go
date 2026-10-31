@@ -94,7 +94,8 @@ func OptionalAuthMiddleware(cfg config.JWTConfig, db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// AdminMiddleware returns 403 JSON for the admin API when the caller isn't an admin.
+// AdminMiddleware returns 403 JSON for the admin API when the caller isn't
+// staff or admin.
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, exists := c.Get("user")
@@ -103,8 +104,22 @@ func AdminMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		if !user.(models.User).IsAdmin() {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		if !user.(models.User).IsStaff() {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Staff access required"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// AdminOnlyMiddleware guards account-management APIs: admins only. Run it
+// after AdminMiddleware.
+func AdminOnlyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, exists := c.Get("user")
+		if !exists || !user.(models.User).IsAdmin() {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can manage user accounts"})
 			c.Abort()
 			return
 		}
@@ -113,7 +128,7 @@ func AdminMiddleware() gin.HandlerFunc {
 }
 
 // AdminPageMiddleware guards the admin HTML pages. Unauthenticated visitors
-// are sent to /admin/login; signed-in non-admins are sent to the home page.
+// are sent to /admin/login; signed-in users without a staff role go home.
 func AdminPageMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, exists := c.Get("user")
@@ -122,8 +137,21 @@ func AdminPageMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		if !user.(models.User).IsAdmin() {
+		if !user.(models.User).IsStaff() {
 			c.Redirect(http.StatusFound, "/")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// AdminOnlyPageMiddleware sends staff (non-admins) back to the dashboard.
+func AdminOnlyPageMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, exists := c.Get("user")
+		if !exists || !user.(models.User).IsAdmin() {
+			c.Redirect(http.StatusFound, "/admin")
 			c.Abort()
 			return
 		}

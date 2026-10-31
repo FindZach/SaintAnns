@@ -17,8 +17,8 @@
                     {{range .Events}}
                     <li class="parish-calendar-event">
                         <div class="parish-calendar-date">
-                            <span class="parish-calendar-day">{{.StartsAt.Format "2"}}</span>
-                            <span class="parish-calendar-dow">{{.StartsAt.Format "Mon"}}</span>
+                            <span class="parish-calendar-day">{{.LocalStart.Format "2"}}</span>
+                            <span class="parish-calendar-dow">{{.LocalStart.Format "Mon"}}</span>
                         </div>
                         <div class="parish-calendar-body">
                             <h3 class="parish-calendar-event-title">
@@ -26,8 +26,8 @@
                                 {{if .Featured}}<span class="parish-calendar-badge">Featured</span>{{end}}
                             </h3>
                             <p class="parish-calendar-meta">
-                                <time datetime="{{.StartsAt.Format "2006-01-02T15:04"}}">{{.StartsAt.Format "3:04 PM"}}</time>
-                                {{if .EndsAt}} – <time datetime="{{.EndsAt.Format "2006-01-02T15:04"}}">{{.EndsAt.Format "3:04 PM"}}</time>{{end}}
+                                <time datetime="{{.LocalStart.Format "2006-01-02T15:04"}}">{{.LocalStart.Format "3:04 PM"}}</time>
+                                {{if .LocalEnd}} – <time datetime="{{.LocalEnd.Format "2006-01-02T15:04"}}">{{.LocalEnd.Format "3:04 PM"}}</time>{{end}}
                                 {{if .Location}} &middot; <span>{{.Location}}</span>{{end}}
                             </p>
                             {{if .Body}}<p class="parish-calendar-desc">{{.Body}}</p>{{end}}

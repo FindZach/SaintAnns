@@ -17,15 +17,7 @@ import (
 const adminListLimit = 500
 
 // parishZone is the time zone to show times in across the admin pages.
-var parishZone = loadParishZone()
-
-func loadParishZone() *time.Location {
-	zone, err := time.LoadLocation("America/New_York")
-	if err != nil {
-		return time.Local
-	}
-	return zone
-}
+var parishZone = models.ParishZone
 
 // AdminHandler serves the admin dashboard. Only users with the admin role
 // reach it (see middleware.AdminPageMiddleware and AdminMiddleware).

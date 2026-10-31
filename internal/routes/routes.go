@@ -114,6 +114,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 			adminPages.GET("/confessions", adminStructured.ConfessionsPage)
 			adminPages.GET("/registrations", adminStructured.RegistrationsPage)
 			adminPages.GET("/assets", adminAssetsHandler.LibraryPage)
+			adminPages.GET("/users", middleware.AdminOnlyPageMiddleware(), handlers.NewUserHandler(db, cfg).UsersPage)
 		}
 
 		// Admin API. OptionalAuthMiddleware reads either the Bearer header or
@@ -125,14 +126,18 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		adminAPI := router.Group("/api/v1/admin")
 		adminAPI.Use(middleware.OptionalAuthMiddleware(cfg.JWT, db), middleware.AdminMiddleware())
 		{
-			adminAPI.POST("/auth/register", authHandler.Register)
+			adminAPI.POST("/auth/register", middleware.AdminOnlyMiddleware(), authHandler.Register)
 			adminAPI.POST("/auth/refresh", authHandler.RefreshToken)
+			adminAPI.PUT("/me/password", userHandler.ChangeOwnPassword)
 
 			users := adminAPI.Group("/users")
+			users.Use(middleware.AdminOnlyMiddleware())
 			{
 				users.GET("", userHandler.GetAllUsers)
+				users.POST("", userHandler.CreateUser)
 				users.PUT("/:id/status", userHandler.UpdateUserStatus)
 				users.PUT("/:id/role", userHandler.UpdateUserRole)
+				users.PUT("/:id/password", userHandler.SetPassword)
 			}
 
 			messages := adminAPI.Group("/messages")
@@ -171,6 +176,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 			// Bulletins
 			adminAPI.POST("/bulletins", adminStructured.BulletinAPICreate)
+			adminAPI.PUT("/bulletins/:id", adminStructured.BulletinAPIUpdate)
 			adminAPI.DELETE("/bulletins/:id", adminStructured.BulletinAPIDelete)
 
 			// Events
@@ -186,5 +192,10 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	// ---------- CMS catch-all (any slug that didn't match above) ----------
 	pageHandler := handlers.NewPageHandler(db)
-	router.NoRoute(pageHandler.Render)
+	// OptionalAuth lets signed-in staff preview draft (unpublished) pages.
+	if db != nil {
+		router.NoRoute(middleware.OptionalAuthMiddleware(cfg.JWT, db), pageHandler.Render)
+	} else {
+		router.NoRoute(pageHandler.Render)
+	}
 }

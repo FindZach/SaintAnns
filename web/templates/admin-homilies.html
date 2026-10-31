@@ -16,7 +16,9 @@
             {{if .homilies}}
             <ul class="parish-admin-message-list" id="homily-list">
                 {{range .homilies}}
-                <li class="parish-admin-message" data-row-id="{{.ID}}">
+                <li class="parish-admin-message" data-row-id="{{.ID}}"
+                    data-preached-on="{{.PreachedOn.Format "2006-01-02"}}" data-title="{{.Title}}" data-author="{{.Author}}"
+                    data-body="{{.Body}}" data-audio-url="{{.AudioURL}}" data-video-url="{{.VideoURL}}" data-document-url="{{.DocumentURL}}">
                     <div class="parish-admin-message-head">
                         <strong>{{.Title}}</strong>
                         <span class="parish-admin-message-subject">{{.PreachedOn.Format "Jan 2, 2006"}}</span>
@@ -27,6 +29,7 @@
                         {{if .DocumentURL}}<a href="{{.DocumentURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-file-pdf"></i> Document</a>{{end}}
                         {{if .AudioURL}}<a href="{{.AudioURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-headphones"></i> Audio</a>{{end}}
                         {{if .VideoURL}}<a href="{{.VideoURL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-video"></i> Video</a>{{end}}
+                        <button type="button" class="parish-admin-link" data-action="edit-homily"><i class="fas fa-pen"></i> Edit</button>
                         <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-homily">Delete</button>
                     </div>
                 </li>
@@ -67,8 +70,13 @@
                         <textarea id="homily-body" name="body" rows="8"></textarea>
                     </div>
                     <div class="parish-field">
-                        <label for="homily-document">PDF / Document URL <span class="parish-field-optional">(optional — paste the asset URL from the asset library)</span></label>
-                        <input type="url" id="homily-document" name="document_url" placeholder="/static/uploads/legacy/…homily.pdf or https://…">
+                        <label for="homily-document">PDF of the homily <span class="parish-field-optional">(optional)</span></label>
+                        <div class="parish-file-choice">
+                            <button type="button" class="parish-btn parish-btn-ghost" data-pick-pdf="homily-document"><i class="fas fa-file-pdf"></i> Choose PDF</button>
+                            <span class="parish-file-choice-name" data-file-name-for="homily-document">No PDF chosen</span>
+                            <button type="button" class="parish-admin-link parish-admin-link-danger" data-clear-file="homily-document" hidden>Remove</button>
+                        </div>
+                        <input type="hidden" id="homily-document" name="document_url">
                     </div>
                     <div class="parish-form-row">
                         <div class="parish-field">
@@ -83,11 +91,12 @@
                     <p id="new-homily-error" class="parish-form-error" role="alert" hidden></p>
                     <div class="parish-admin-modal-actions">
                         <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
-                        <button type="submit" class="parish-btn parish-btn-primary">Post homily</button>
+                        <button type="submit" class="parish-btn parish-btn-primary" data-create-label="Post homily" data-edit-label="Save changes">Post homily</button>
                     </div>
                 </form>
             </div>
         </div>
+        {{template "admin-asset-picker" .}}
     </main>
 </div>
 {{end}}

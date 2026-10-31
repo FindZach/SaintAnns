@@ -78,13 +78,13 @@
             <li class="parish-upcoming-item">
                 <a href="/events-news/{{.Slug}}/" class="parish-upcoming-link">
                     <div class="parish-upcoming-date">
-                        <span class="parish-upcoming-day">{{.StartsAt.Format "2"}}</span>
-                        <span class="parish-upcoming-month">{{.StartsAt.Format "Jan"}}</span>
+                        <span class="parish-upcoming-day">{{.LocalStart.Format "2"}}</span>
+                        <span class="parish-upcoming-month">{{.LocalStart.Format "Jan"}}</span>
                     </div>
                     <div class="parish-upcoming-text">
                         <h3 class="parish-upcoming-title">{{.Title}}{{if .Featured}} <span class="parish-upcoming-badge">Featured</span>{{end}}</h3>
                         <p class="parish-upcoming-meta">
-                            <i class="fas fa-clock"></i> {{.StartsAt.Format "Monday · 3:04 PM"}}
+                            <i class="fas fa-clock"></i> {{.LocalStart.Format "Monday · 3:04 PM"}}
                             {{if .Location}}<span class="parish-upcoming-sep">·</span><i class="fas fa-location-dot"></i> {{.Location}}{{end}}
                         </p>
                     </div>

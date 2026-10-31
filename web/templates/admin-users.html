@@ -1,0 +1,100 @@
+{{define "admin-users.html"}}{{template "base" .}}{{end}}
+
+{{define "admin-users-content"}}
+<div class="parish-admin-shell">
+    {{template "admin-sidebar" .}}
+    <main class="parish-admin-main">
+        <header class="parish-admin-head">
+            <h1>Users</h1>
+            <p class="parish-admin-subtitle">
+                <strong>Staff</strong> can edit all parish content. <strong>Admins</strong> can also add and manage accounts.
+            </p>
+            <button type="button" id="new-user-btn" class="parish-btn parish-btn-primary parish-admin-head-action">
+                <i class="fas fa-user-plus"></i> Add user
+            </button>
+        </header>
+
+        <section class="parish-admin-panel">
+            <table class="parish-admin-table" id="user-table">
+                <thead>
+                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {{range .users}}
+                    <tr data-user-id="{{.ID}}" data-user-name="{{.FirstName}} {{.LastName}}" class="{{if not .IsActive}}parish-admin-row-muted{{end}}">
+                        <td>{{.FirstName}} {{.LastName}}{{if eq .ID $.currentUserID}} <span class="parish-admin-badge">You</span>{{end}}</td>
+                        <td>{{.Email}}</td>
+                        <td>
+                            {{if eq .ID $.currentUserID}}
+                            {{if .IsAdmin}}Admin{{else}}Staff{{end}}
+                            {{else}}
+                            <select data-action="set-role" aria-label="Role for {{.FirstName}}">
+                                <option value="staff" {{if not .IsAdmin}}selected{{end}}>Staff</option>
+                                <option value="admin" {{if .IsAdmin}}selected{{end}}>Admin</option>
+                            </select>
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if .IsActive}}<span class="parish-admin-badge parish-admin-badge-ok">Active</span>{{else}}<span class="parish-admin-badge parish-admin-badge-draft">Deactivated</span>{{end}}
+                        </td>
+                        <td class="parish-admin-row-actions">
+                            {{if ne .ID $.currentUserID}}
+                            <button type="button" class="parish-admin-link" data-action="reset-password"><i class="fas fa-key"></i> Set password</button>
+                            {{if .IsActive}}
+                            <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="set-active" data-active="false">Deactivate</button>
+                            {{else}}
+                            <button type="button" class="parish-admin-link" data-action="set-active" data-active="true">Reactivate</button>
+                            {{end}}
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+
+        <div id="new-user-modal" class="parish-admin-modal" hidden>
+            <div class="parish-admin-modal-backdrop" data-modal-close></div>
+            <div class="parish-admin-modal-panel" role="dialog" aria-modal="true" aria-labelledby="new-user-title">
+                <header class="parish-admin-modal-head">
+                    <h2 id="new-user-title">Add user</h2>
+                    <button type="button" class="parish-admin-modal-close" data-modal-close aria-label="Close"><i class="fas fa-times"></i></button>
+                </header>
+                <form id="new-user-form" class="parish-form">
+                    <div class="parish-form-row">
+                        <div class="parish-field">
+                            <label for="nu-first">First name</label>
+                            <input type="text" id="nu-first" required>
+                        </div>
+                        <div class="parish-field">
+                            <label for="nu-last">Last name</label>
+                            <input type="text" id="nu-last">
+                        </div>
+                    </div>
+                    <div class="parish-field">
+                        <label for="nu-email">Email</label>
+                        <input type="email" id="nu-email" required autocomplete="off">
+                    </div>
+                    <div class="parish-field">
+                        <label for="nu-role">Role</label>
+                        <select id="nu-role">
+                            <option value="staff" selected>Staff — edits parish content</option>
+                            <option value="admin">Admin — also manages accounts</option>
+                        </select>
+                    </div>
+                    <div class="parish-field">
+                        <label for="nu-password">Temporary password <span class="parish-field-optional">(at least 10 characters)</span></label>
+                        <input type="text" id="nu-password" minlength="10" required autocomplete="off">
+                        <p class="parish-field-hint">Give this to the person privately. They can change it with "Change my password" after signing in.</p>
+                    </div>
+                    <p id="new-user-error" class="parish-form-error" role="alert" hidden></p>
+                    <div class="parish-admin-modal-actions">
+                        <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
+                        <button type="submit" class="parish-btn parish-btn-primary">Add user</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{{end}}

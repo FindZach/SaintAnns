@@ -67,14 +67,14 @@ func groupEventsByMonth(events []models.Event) []EventMonthGroup {
 	var out []EventMonthGroup
 	byKey := make(map[string]int)
 	for _, e := range events {
-		key := e.StartsAt.Format("2006-01")
+		key := e.LocalStart().Format("2006-01")
 		if idx, ok := byKey[key]; ok {
 			out[idx].Events = append(out[idx].Events, e)
 			continue
 		}
 		byKey[key] = len(out)
 		out = append(out, EventMonthGroup{
-			Label:  e.StartsAt.Format("January 2006"),
+			Label:  e.LocalStart().Format("January 2006"),
 			Key:    key,
 			Events: []models.Event{e},
 		})

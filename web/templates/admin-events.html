@@ -16,15 +16,21 @@
             {{if .events}}
             <ul class="parish-admin-message-list" id="event-list">
                 {{range .events}}
-                <li class="parish-admin-message" data-row-id="{{.ID}}">
+                <li class="parish-admin-message" data-row-id="{{.ID}}"
+                    data-slug="{{.Slug}}" data-title="{{.Title}}" data-location="{{.Location}}"
+                    data-starts-at="{{.LocalStart.Format "2006-01-02T15:04"}}" data-ends-at="{{with .LocalEnd}}{{.Format "2006-01-02T15:04"}}{{end}}"
+                    data-body="{{.Body}}" data-featured="{{if .Featured}}1{{end}}" data-tag="{{.Tag}}"
+                    data-flyer-id="{{with .FlyerAssetID}}{{.}}{{end}}" data-flyer-url="{{with .FlyerAsset}}{{.URL}}{{end}}" data-flyer-name="{{with .FlyerAsset}}{{.OriginalName}}{{end}}">
                     <div class="parish-admin-message-head">
                         <strong>{{.Title}}</strong>
-                        <span class="parish-admin-message-subject">{{.StartsAt.Format "Mon Jan 2, 3:04 PM"}}</span>
+                        <span class="parish-admin-message-subject">{{.LocalStart.Format "Mon Jan 2, 3:04 PM"}}</span>
                         {{if .Featured}}<span class="parish-admin-badge parish-admin-badge-ok">Featured</span>{{end}}
                     </div>
                     {{if .Location}}<p class="parish-admin-message-contact"><i class="fas fa-map-marker-alt"></i> {{.Location}}</p>{{end}}
                     {{if .Body}}<p class="parish-admin-message-body">{{.Body}}</p>{{end}}
                     <div class="parish-admin-message-actions">
+                        <a href="/events-news/{{.Slug}}/" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-arrow-up-right-from-square"></i> View</a>
+                        <button type="button" class="parish-admin-link" data-action="edit-event"><i class="fas fa-pen"></i> Edit</button>
                         <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-event">Delete</button>
                     </div>
                 </li>
@@ -46,23 +52,13 @@
                     </button>
                 </header>
                 <form id="new-event-form" class="parish-form">
-                    <div class="parish-form-row">
-                        <div class="parish-field">
-                            <label for="event-slug">Slug</label>
-                            <input type="text" id="event-slug" name="slug" placeholder="advent-mission-2026" required>
-                        </div>
-                        <div class="parish-field">
-                            <label for="event-tag">Tag <span class="parish-field-optional">(optional)</span></label>
-                            <input type="text" id="event-tag" name="tag" placeholder="faith-formation">
-                        </div>
-                    </div>
                     <div class="parish-field">
                         <label for="event-title-input">Title</label>
                         <input type="text" id="event-title-input" name="title" required>
                     </div>
                     <div class="parish-form-row">
                         <div class="parish-field">
-                            <label for="event-starts-at">Starts at</label>
+                            <label for="event-starts-at">Starts at <span class="parish-field-optional">(Eastern time)</span></label>
                             <input type="datetime-local" id="event-starts-at" name="starts_at" required>
                         </div>
                         <div class="parish-field">
@@ -79,19 +75,43 @@
                         <textarea id="event-body" name="body" rows="4"></textarea>
                     </div>
                     <div class="parish-field">
+                        <label for="event-flyer-id">Flyer <span class="parish-field-optional">(optional image)</span></label>
+                        <div class="parish-file-choice">
+                            <img class="parish-file-choice-thumb" data-file-thumb-for="event-flyer-id" alt="" hidden>
+                            <button type="button" class="parish-btn parish-btn-ghost" data-pick-image="event-flyer-id"><i class="fas fa-image"></i> Choose image</button>
+                            <span class="parish-file-choice-name" data-file-name-for="event-flyer-id">No flyer</span>
+                            <button type="button" class="parish-admin-link parish-admin-link-danger" data-clear-file="event-flyer-id" hidden>Remove</button>
+                        </div>
+                        <input type="hidden" id="event-flyer-id" name="flyer_asset_id">
+                    </div>
+                    <div class="parish-field">
                         <label>
                             <input type="checkbox" id="event-featured" name="featured">
                             Feature on home page event list
                         </label>
                     </div>
+                    <details class="parish-form-more">
+                        <summary>More options</summary>
+                        <div class="parish-form-row">
+                            <div class="parish-field">
+                                <label for="event-slug">Web address <span class="parish-field-optional">(optional — made from the title)</span></label>
+                                <input type="text" id="event-slug" name="slug" placeholder="advent-mission-2026">
+                            </div>
+                            <div class="parish-field">
+                                <label for="event-tag">Tag <span class="parish-field-optional">(optional)</span></label>
+                                <input type="text" id="event-tag" name="tag" placeholder="faith-formation">
+                            </div>
+                        </div>
+                    </details>
                     <p id="new-event-error" class="parish-form-error" role="alert" hidden></p>
                     <div class="parish-admin-modal-actions">
                         <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
-                        <button type="submit" class="parish-btn parish-btn-primary">Create event</button>
+                        <button type="submit" class="parish-btn parish-btn-primary" data-create-label="Create event" data-edit-label="Save changes">Create event</button>
                     </div>
                 </form>
             </div>
         </div>
+        {{template "admin-asset-picker" .}}
     </main>
 </div>
 {{end}}

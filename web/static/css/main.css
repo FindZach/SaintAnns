@@ -1764,3 +1764,28 @@ body.parish-menu-open { overflow: hidden; }
 .parish-toast-ok { background: #205c37; }
 .parish-toast-error { background: var(--parish-burgundy); }
 .parish-toast-leaving { opacity: 0; }
+
+/* ---------- Staff workflow additions ---------- */
+.parish-field-hint { font-size: 0.8rem; color: var(--parish-muted, #6b7280); margin: 0.3rem 0 0; }
+.parish-admin-row-muted td { opacity: 0.55; }
+.parish-file-choice { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.parish-file-choice-name { font-size: 0.9rem; color: var(--parish-navy); word-break: break-all; }
+.parish-file-choice-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 0.35rem; border: 1px solid #e5e0d2; }
+.parish-form-more { margin: 0.5rem 0 1rem; }
+.parish-form-more > summary { cursor: pointer; color: var(--parish-blue); font-size: 0.9rem; margin-bottom: 0.75rem; }
+.parish-editor-settings {
+    background: #fff; border: 1px solid #e5e0d2; border-radius: 0.5rem;
+    padding: 0.75rem 1rem; margin: 0 0 1.25rem;
+}
+.parish-editor-settings > summary { cursor: pointer; font-weight: 600; color: var(--parish-navy); }
+.parish-editor-settings[open] > summary { margin-bottom: 0.75rem; }
+.parish-editor-settings select, .parish-editor-settings textarea { width: 100%; }
+.parish-slug-input { display: flex; align-items: center; border: 1px solid #d6d1c4; border-radius: 0.35rem; overflow: hidden; background: #fff; }
+.parish-slug-input span { padding: 0.55rem 0.25rem 0.55rem 0.65rem; color: var(--parish-muted, #6b7280); font-family: ui-monospace, monospace; font-size: 0.85rem; white-space: nowrap; }
+.parish-slug-input input { border: 0 !important; flex: 1; min-width: 0; }
+.parish-editor-head-actions { flex-wrap: wrap; align-items: center; }
+.parish-draft-banner {
+    background: #fff7e0; border: 1px solid var(--parish-gold); color: var(--parish-navy);
+    padding: 0.75rem 1rem; border-radius: 0.4rem; margin: 0 0 1.5rem; font-weight: 500;
+}
+.parish-draft-banner i { color: var(--parish-gold); margin-right: 0.4rem; }

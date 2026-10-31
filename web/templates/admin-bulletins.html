@@ -16,13 +16,16 @@
             {{if .bulletins}}
             <ul class="parish-admin-message-list" id="bulletin-list">
                 {{range .bulletins}}
-                <li class="parish-admin-message" data-row-id="{{.ID}}">
+                <li class="parish-admin-message" data-row-id="{{.ID}}"
+                    data-published-on="{{.PublishedOn.Format "2006-01-02"}}" data-label="{{.Label}}"
+                    data-file-name="{{with .Asset}}{{.OriginalName}}{{end}}">
                     <div class="parish-admin-message-head">
                         <strong>{{.Label}}</strong>
                         <span class="parish-admin-message-subject">{{.PublishedOn.Format "Jan 2, 2006"}}</span>
                     </div>
                     <div class="parish-admin-message-actions">
                         {{if .Asset}}<a href="{{.Asset.URL}}" target="_blank" rel="noopener" class="parish-admin-link"><i class="fas fa-file-pdf"></i> View PDF</a>{{end}}
+                        <button type="button" class="parish-admin-link" data-action="edit-bulletin"><i class="fas fa-pen"></i> Edit</button>
                         <button type="button" class="parish-admin-link parish-admin-link-danger" data-action="delete-bulletin">Delete</button>
                     </div>
                 </li>
@@ -53,14 +56,15 @@
                         <input type="text" id="bulletin-label" name="label" placeholder="e.g. 30th Sunday in Ordinary Time" required>
                     </div>
                     <div class="parish-field">
-                        <label for="bulletin-pdf">PDF file</label>
+                        <label for="bulletin-pdf" id="bulletin-pdf-label">PDF file</label>
+                        <p class="parish-field-hint" id="bulletin-current-file" hidden></p>
                         <input type="file" id="bulletin-pdf" accept="application/pdf" required>
                         <p class="parish-admin-subtitle" id="bulletin-upload-status"></p>
                     </div>
                     <p id="new-bulletin-error" class="parish-form-error" role="alert" hidden></p>
                     <div class="parish-admin-modal-actions">
                         <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>
-                        <button type="submit" class="parish-btn parish-btn-primary">Upload</button>
+                        <button type="submit" class="parish-btn parish-btn-primary" data-create-label="Upload" data-edit-label="Save changes">Upload</button>
                     </div>
                 </form>
             </div>

@@ -334,6 +334,49 @@ func (h *AdminStructuredHandler) BulletinAPICreate(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"row": row})
 }
 
+// BulletinAPIUpdate edits a bulletin's date and label, and optionally swaps
+// its PDF (asset_id 0 keeps the current file).
+func (h *AdminStructuredHandler) BulletinAPIUpdate(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
+		return
+	}
+	var req struct {
+		PublishedOn string `json:"published_on" binding:"required"`
+		Label       string `json:"label" binding:"required"`
+		AssetID     uint   `json:"asset_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Date and label are required"})
+		return
+	}
+	published, err := time.Parse("2006-01-02", req.PublishedOn)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "published_on must be YYYY-MM-DD"})
+		return
+	}
+	updates := map[string]interface{}{"published_on": published, "label": strings.TrimSpace(req.Label)}
+	if req.AssetID != 0 {
+		var asset models.Asset
+		if err := h.db.First(&asset, req.AssetID).Error; err != nil || asset.Kind != models.AssetPDF {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "The new file must be an uploaded PDF"})
+			return
+		}
+		updates["asset_id"] = req.AssetID
+	}
+	result := h.db.Model(&models.Bulletin{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Bulletin not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Updated"})
+}
+
 func (h *AdminStructuredHandler) BulletinAPIDelete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -351,22 +394,22 @@ func (h *AdminStructuredHandler) BulletinAPIDelete(c *gin.Context) {
 
 func (h *AdminStructuredHandler) EventsPage(c *gin.Context) {
 	var events []models.Event
-	h.db.Order("starts_at DESC").Find(&events)
+	h.db.Preload("FlyerAsset").Order("starts_at DESC").Find(&events)
 	data := h.pageData(c, "admin-events", "Events — Admin — OLV Parish")
 	data["events"] = events
 	c.HTML(http.StatusOK, "admin-events.html", data)
 }
 
 type eventRequest struct {
-	Slug       string `json:"slug" binding:"required"`
-	Title      string `json:"title" binding:"required"`
-	Location   string `json:"location"`
-	StartsAt   string `json:"starts_at" binding:"required"` // RFC3339 or YYYY-MM-DDTHH:MM
-	EndsAt     string `json:"ends_at"`
-	Body       string `json:"body"`
-	FlyerID    uint   `json:"flyer_asset_id"`
-	Featured   bool   `json:"featured"`
-	Tag        string `json:"tag"`
+	Slug     string `json:"slug"`
+	Title    string `json:"title" binding:"required"`
+	Location string `json:"location"`
+	StartsAt string `json:"starts_at" binding:"required"` // RFC3339 or YYYY-MM-DDTHH:MM
+	EndsAt   string `json:"ends_at"`
+	Body     string `json:"body"`
+	FlyerID  uint   `json:"flyer_asset_id"`
+	Featured bool   `json:"featured"`
+	Tag      string `json:"tag"`
 }
 
 func (h *AdminStructuredHandler) EventAPICreate(c *gin.Context) {
@@ -382,7 +425,7 @@ func (h *AdminStructuredHandler) EventAPICreate(c *gin.Context) {
 	}
 	ends, _ := parseFlexibleTime(req.EndsAt)
 	row := models.Event{
-		Slug: strings.TrimSpace(req.Slug), Title: req.Title, Location: req.Location,
+		Slug: h.eventSlug(req.Slug, req.Title, starts, 0), Title: req.Title, Location: req.Location,
 		StartsAt: starts, Body: req.Body, Featured: req.Featured, Tag: req.Tag,
 	}
 	if !ends.IsZero() {
@@ -416,7 +459,7 @@ func (h *AdminStructuredHandler) EventAPIUpdate(c *gin.Context) {
 	}
 	ends, _ := parseFlexibleTime(req.EndsAt)
 	updates := map[string]interface{}{
-		"slug":           req.Slug,
+		"slug":           h.eventSlug(req.Slug, req.Title, starts, uint(id)),
 		"title":          req.Title,
 		"location":       req.Location,
 		"starts_at":      starts,
@@ -476,15 +519,49 @@ func seasonOptions() []kv {
 	}
 }
 
+// parseFlexibleTime reads an event time. Times without an explicit offset
+// (what <input type="datetime-local"> sends) are parish wall-clock time, so
+// they're interpreted in America/New_York — otherwise a 7 pm event would be
+// stored as 7 pm UTC and drop off "upcoming" lists hours early.
 func parseFlexibleTime(s string) (time.Time, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return time.Time{}, nil
 	}
-	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04", "2006-01-02 15:04", "2006-01-02"} {
-		if t, err := time.Parse(layout, s); err == nil {
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, nil
+	}
+	for _, layout := range []string{"2006-01-02T15:04", "2006-01-02T15:04:05", "2006-01-02 15:04", "2006-01-02"} {
+		if t, err := time.ParseInLocation(layout, s, parishZone); err == nil {
 			return t, nil
 		}
 	}
 	return time.Time{}, fmt.Errorf("could not parse time %q (expected YYYY-MM-DDTHH:MM)", s)
+}
+
+// eventSlug cleans a staff-entered address, or builds one from the title and
+// start date ("fall-festival-2026-10-12") when it's blank, then makes it
+// unique against other events (including deleted ones, which still hold
+// their address in the unique index).
+func (h *AdminStructuredHandler) eventSlug(raw, title string, starts time.Time, excludeID uint) string {
+	base := slugify(raw)
+	if base == "" {
+		base = slugify(title)
+		if !starts.IsZero() {
+			base = strings.Trim(base+"-"+starts.In(parishZone).Format("2006-01-02"), "-")
+		}
+	}
+	if base == "" {
+		base = "event"
+	}
+	slug := base
+	for i := 2; i < 100; i++ {
+		var n int64
+		h.db.Unscoped().Model(&models.Event{}).Where("slug = ? AND id <> ?", slug, excludeID).Count(&n)
+		if n == 0 {
+			return slug
+		}
+		slug = fmt.Sprintf("%s-%d", base, i)
+	}
+	return slug
 }

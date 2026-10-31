@@ -12,6 +12,9 @@
     function init() {
         wireModals();
         wireLogout();
+        if (document.getElementById('asset-picker')) wireAssetPicker();
+        initFileChoiceFields();
+        initChangePassword();
         initPagesList();
         initPageEditor();
         initTableCRUD('mass-rows', '/api/v1/admin/mass-schedules', massTimeShape);
@@ -19,6 +22,118 @@
         initHomilies();
         initBulletins();
         initEvents();
+        initUsers();
+    }
+
+    // ========== Create / edit record forms ==========
+
+    // Puts a "New X" modal form into create or edit mode. `fields` maps input
+    // ids to values; checkboxes take booleans. Returns nothing; callers keep
+    // their own `editingId` to decide between POST and PUT on submit.
+    function setFormMode(form, { editing, title, fields }) {
+        const modal = closest(form, '.parish-admin-modal');
+        const heading = modal && modal.querySelector('.parish-admin-modal-head h2');
+        if (heading) heading.textContent = title;
+        const submit = form.querySelector('[type="submit"]');
+        if (submit) submit.textContent = editing ? (submit.dataset.editLabel || 'Save') : (submit.dataset.createLabel || submit.textContent);
+        form.reset();
+        // reset() leaves hidden inputs alone; clear them so a file chosen while
+        // editing one record doesn't carry over into the next.
+        form.querySelectorAll('input[type="hidden"][id]').forEach((el) => { el.value = ''; });
+        Object.entries(fields || {}).forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.type === 'checkbox') el.checked = !!val;
+            else el.value = val == null ? '' : val;
+        });
+        form.querySelectorAll('input[type="hidden"][id]').forEach((el) => syncFileChoice(el.id));
+        const err = form.querySelector('.parish-form-error');
+        hide(err);
+    }
+
+    // ========== File-choice fields (PDF / image pickers in forms) ==========
+
+    // A hidden input holds the value (a URL for PDFs, an asset id for images);
+    // these helpers keep its visible name / thumbnail / Remove button in sync.
+    function syncFileChoice(inputId, label, thumbURL) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const nameEl = document.querySelector(`[data-file-name-for="${inputId}"]`);
+        const thumb = document.querySelector(`[data-file-thumb-for="${inputId}"]`);
+        const clearBtn = document.querySelector(`[data-clear-file="${inputId}"]`);
+        if (!nameEl) return;
+        const has = !!input.value;
+        if (label !== undefined) input.dataset.label = label || '';
+        if (thumbURL !== undefined) input.dataset.thumb = thumbURL || '';
+        if (!has) { input.dataset.label = ''; input.dataset.thumb = ''; }
+        const fallback = nameEl.dataset.emptyText || (nameEl.dataset.emptyText = nameEl.textContent);
+        nameEl.textContent = has ? (input.dataset.label || fileNameFromURL(input.value) || 'Chosen') : fallback;
+        if (clearBtn) clearBtn.hidden = !has;
+        if (thumb) {
+            thumb.hidden = !(has && input.dataset.thumb);
+            if (has && input.dataset.thumb) thumb.src = input.dataset.thumb;
+        }
+    }
+
+    function fileNameFromURL(u) {
+        if (!u) return '';
+        const last = decodeURIComponent(String(u).split('/').pop() || '');
+        return last.replace(/^\d{10,}-/, '');
+    }
+
+    function initFileChoiceFields() {
+        document.querySelectorAll('[data-pick-pdf]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.pickPdf;
+                openAssetPicker('pdf', (a) => {
+                    document.getElementById(id).value = a.url;
+                    syncFileChoice(id, a.original_name || fileNameFromURL(a.url));
+                });
+            });
+        });
+        document.querySelectorAll('[data-pick-image]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.pickImage;
+                openAssetPicker('image', (a) => {
+                    document.getElementById(id).value = a.id;
+                    syncFileChoice(id, a.original_name || fileNameFromURL(a.url), a.url);
+                });
+            });
+        });
+        document.querySelectorAll('[data-clear-file]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.clearFile;
+                document.getElementById(id).value = '';
+                syncFileChoice(id);
+            });
+        });
+    }
+
+    // ========== Change my password ==========
+
+    function initChangePassword() {
+        const btn = document.getElementById('change-password-btn');
+        const form = document.getElementById('change-password-form');
+        if (!btn || !form) return;
+        const errBox = document.getElementById('change-password-error');
+        btn.addEventListener('click', () => { form.reset(); hide(errBox); openModal('change-password-modal'); });
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hide(errBox);
+            const next = document.getElementById('cp-new').value;
+            if (next !== document.getElementById('cp-confirm').value) {
+                showError(errBox, 'The new passwords don’t match.');
+                return;
+            }
+            try {
+                await apiFetch('/api/v1/admin/me/password', {
+                    method: 'PUT',
+                    body: { current_password: document.getElementById('cp-current').value, new_password: next },
+                });
+                closeModal(document.getElementById('change-password-modal'));
+                toast('Password changed', 'ok');
+            } catch (err) { showError(errBox, err.message); }
+        });
     }
 
     // ========== Common helpers ==========
@@ -97,6 +212,14 @@
 
         const form = document.getElementById('new-page-form');
         const errBox = document.getElementById('new-page-error');
+        const titleIn = document.getElementById('new-page-title-input');
+        const slugIn = document.getElementById('new-page-slug');
+        const parentIn = document.getElementById('new-page-parent');
+        const prefix = document.getElementById('new-page-slug-prefix');
+        let slugTouched = false;
+        if (slugIn) slugIn.addEventListener('input', () => { slugTouched = slugIn.value !== ''; });
+        if (titleIn && slugIn) titleIn.addEventListener('input', () => { if (!slugTouched) slugIn.value = slugifyText(titleIn.value); });
+        if (parentIn && prefix) parentIn.addEventListener('change', () => { prefix.textContent = '/' + (parentIn.value ? parentIn.value + '/' : ''); });
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -105,8 +228,9 @@
                     const data = await apiFetch('/api/v1/admin/pages', {
                         method: 'POST',
                         body: {
-                            slug: document.getElementById('new-page-slug').value.trim(),
-                            title: document.getElementById('new-page-title-input').value.trim(),
+                            slug: slugIn.value.trim(),
+                            parent_slug: parentIn ? parentIn.value : '',
+                            title: titleIn.value.trim(),
                             nav_label: document.getElementById('new-page-nav-label').value.trim(),
                         },
                     });
@@ -374,7 +498,31 @@
         document.getElementById('add-block-btn').addEventListener('click', () => openPalette(editor));
         document.getElementById('save-page-btn').addEventListener('click', () => savePage(editor));
         renderPalette(editor);
-        wireAssetPicker();
+
+        const pubBtn = document.getElementById('publish-toggle-btn');
+        if (pubBtn) pubBtn.addEventListener('click', () => togglePublish(editor, pubBtn));
+    }
+
+    async function togglePublish(editor, btn) {
+        const published = editor.getAttribute('data-page-published') === '1';
+        const next = !published;
+        if (!next && !confirm('Unpublish this page? Visitors will get "not found" until you publish it again.')) return;
+        btn.disabled = true;
+        try {
+            await apiFetch(`/api/v1/admin/pages/${editor.dataset.pageId}/publish`, { method: 'PUT', body: { publish: next } });
+            editor.setAttribute('data-page-published', next ? '1' : '0');
+            const state = document.getElementById('publish-state');
+            if (state) {
+                state.textContent = next ? 'Published' : 'Draft — not public';
+                state.className = 'parish-admin-badge ' + (next ? 'parish-admin-badge-ok' : 'parish-admin-badge-draft');
+            }
+            btn.innerHTML = next ? '<i class="fas fa-eye-slash"></i> Unpublish' : '<i class="fas fa-globe"></i> Publish';
+            toast(next ? 'Page published' : 'Page unpublished', 'ok');
+        } catch (err) {
+            toast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     // Block types the server renders but this editor has no form for. They're
@@ -446,7 +594,8 @@
         const slug = editor.getAttribute('data-page-slug');
         const titleEl = document.getElementById('page-title');
         const navEl = document.getElementById('page-nav-label');
-        const published = editor.getAttribute('data-page-published') === '1';
+        const parentEl = document.getElementById('page-parent');
+        const metaEl = document.getElementById('page-meta');
 
         const blocks = [];
         editor.querySelectorAll('.parish-editor-block').forEach((el) => {
@@ -468,15 +617,14 @@
         statusEl.className = 'parish-editor-status';
 
         try {
-            await apiFetch('/api/v1/admin/page-content/' + slug, {
-                method: 'PUT',
-                body: {
-                    title: titleEl ? titleEl.textContent.trim() : '',
-                    nav_label: navEl ? navEl.value.trim() : '',
-                    blocks,
-                    publish: !published, // publish on first save
-                },
-            });
+            const body = {
+                title: titleEl ? titleEl.textContent.trim() : '',
+                nav_label: navEl ? navEl.value.trim() : '',
+                blocks,
+            };
+            if (parentEl) body.parent_slug = parentEl.value;
+            if (metaEl) body.meta_description = metaEl.value;
+            await apiFetch('/api/v1/admin/page-content/' + slug, { method: 'PUT', body });
             statusEl.textContent = 'Saved ✓';
             statusEl.className = 'parish-editor-status parish-editor-status-ok';
             setTimeout(() => { statusEl.hidden = true; }, 2000);
@@ -524,7 +672,8 @@
                 if (a.kind === 'image') {
                     card.innerHTML = `<img src="${escAttr(a.url)}" alt="${escAttr(a.alt_text || a.original_name || '')}"><span class="parish-asset-card-name">${escText(a.original_name || '')}</span>`;
                 } else {
-                    card.innerHTML = `<span class="parish-asset-card-filetype"><i class="fas fa-file-pdf"></i></span><span class="parish-asset-card-name">${escText(a.original_name || '')}</span>`;
+                    const icon = { pdf: 'fa-file-pdf', audio: 'fa-music', video: 'fa-video' }[a.kind] || 'fa-file';
+                    card.innerHTML = `<span class="parish-asset-card-filetype"><i class="fas ${icon}"></i></span><span class="parish-asset-card-name">${escText(a.original_name || '')}</span>`;
                 }
                 card.addEventListener('click', () => {
                     if (typeof pickerPendingCallback === 'function') pickerPendingCallback(a);
@@ -646,39 +795,58 @@
     function initHomilies() {
         const newBtn = document.getElementById('new-homily-btn');
         if (!newBtn) return;
-        newBtn.addEventListener('click', () => openModal('new-homily-modal'));
-
         const form = document.getElementById('new-homily-form');
         const errBox = document.getElementById('new-homily-error');
+        let editingId = null;
+
+        newBtn.addEventListener('click', () => {
+            editingId = null;
+            setFormMode(form, { editing: false, title: 'New homily', fields: {} });
+            openModal('new-homily-modal');
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             hide(errBox);
+            const body = {
+                preached_on: document.getElementById('homily-preached-on').value,
+                title: document.getElementById('homily-title-input').value,
+                author: document.getElementById('homily-author').value,
+                body: document.getElementById('homily-body').value,
+                audio_url: document.getElementById('homily-audio').value,
+                video_url: document.getElementById('homily-video').value,
+                document_url: document.getElementById('homily-document').value,
+            };
             try {
-                await apiFetch('/api/v1/admin/homilies', {
-                    method: 'POST',
-                    body: {
-                        preached_on: document.getElementById('homily-preached-on').value,
-                        title: document.getElementById('homily-title-input').value,
-                        author: document.getElementById('homily-author').value,
-                        body: document.getElementById('homily-body').value,
-                        audio_url: document.getElementById('homily-audio').value,
-                        video_url: document.getElementById('homily-video').value,
-                        document_url: document.getElementById('homily-document').value,
-                    },
-                });
+                if (editingId) await apiFetch('/api/v1/admin/homilies/' + editingId, { method: 'PUT', body });
+                else await apiFetch('/api/v1/admin/homilies', { method: 'POST', body });
                 window.location.reload();
             } catch (err) { showError(errBox, err.message); }
         });
 
         document.getElementById('homily-list')?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('[data-action="delete-homily"]');
-            if (!btn) return;
-            const row = closest(btn, '[data-row-id]');
-            if (!row || !confirm('Delete this homily?')) return;
-            try {
-                await apiFetch('/api/v1/admin/homilies/' + row.dataset.rowId, { method: 'DELETE' });
-                row.remove();
-            } catch (err) { toast(err.message, 'error'); }
+            const row = closest(e.target, '[data-row-id]');
+            if (!row) return;
+            if (e.target.closest('[data-action="edit-homily"]')) {
+                const d = row.dataset;
+                editingId = d.rowId;
+                setFormMode(form, {
+                    editing: true, title: 'Edit homily',
+                    fields: {
+                        'homily-preached-on': d.preachedOn, 'homily-title-input': d.title, 'homily-author': d.author,
+                        'homily-body': d.body, 'homily-audio': d.audioUrl, 'homily-video': d.videoUrl, 'homily-document': d.documentUrl,
+                    },
+                });
+                openModal('new-homily-modal');
+                return;
+            }
+            if (e.target.closest('[data-action="delete-homily"]')) {
+                if (!confirm('Delete this homily?')) return;
+                try {
+                    await apiFetch('/api/v1/admin/homilies/' + row.dataset.rowId, { method: 'DELETE' });
+                    row.remove();
+                } catch (err) { toast(err.message, 'error'); }
+            }
         });
     }
 
@@ -687,36 +855,55 @@
     function initBulletins() {
         const newBtn = document.getElementById('new-bulletin-btn');
         if (!newBtn) return;
-        newBtn.addEventListener('click', () => openModal('new-bulletin-modal'));
-
         const form = document.getElementById('new-bulletin-form');
         const errBox = document.getElementById('new-bulletin-error');
         const statusEl = document.getElementById('bulletin-upload-status');
+        const pdfInput = document.getElementById('bulletin-pdf');
+        const pdfLabel = document.getElementById('bulletin-pdf-label');
+        const current = document.getElementById('bulletin-current-file');
+        let editingId = null;
+
+        function setMode(editing, fields, fileName) {
+            setFormMode(form, { editing, title: editing ? 'Edit bulletin' : 'Upload bulletin', fields });
+            pdfInput.required = !editing;
+            if (pdfLabel) pdfLabel.textContent = editing ? 'Replace PDF (optional)' : 'PDF file';
+            if (current) {
+                current.hidden = !editing;
+                current.textContent = editing ? 'Current file: ' + (fileName || 'PDF') : '';
+            }
+            if (statusEl) statusEl.textContent = '';
+        }
+
+        newBtn.addEventListener('click', () => {
+            editingId = null;
+            setMode(false, {});
+            openModal('new-bulletin-modal');
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             hide(errBox);
-            const pdfInput = document.getElementById('bulletin-pdf');
             const file = pdfInput.files[0];
-            if (!file) { showError(errBox, 'Choose a PDF.'); return; }
-
+            if (!editingId && !file) { showError(errBox, 'Choose a PDF.'); return; }
             try {
-                if (statusEl) statusEl.textContent = 'Uploading PDF…';
-                const fd = new FormData();
-                fd.append('file', file);
-                const uploadRes = await fetch('/api/v1/admin/assets', { method: 'POST', body: fd, credentials: 'same-origin' });
-                const uploadData = await uploadRes.json();
-                if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
-
-                if (statusEl) statusEl.textContent = 'Creating bulletin…';
-                await apiFetch('/api/v1/admin/bulletins', {
-                    method: 'POST',
-                    body: {
-                        published_on: document.getElementById('bulletin-published-on').value,
-                        label: document.getElementById('bulletin-label').value,
-                        asset_id: uploadData.id,
-                    },
-                });
+                let assetId = 0;
+                if (file) {
+                    if (statusEl) statusEl.textContent = 'Uploading PDF…';
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const uploadRes = await fetch('/api/v1/admin/assets', { method: 'POST', body: fd, credentials: 'same-origin' });
+                    const uploadData = await uploadRes.json();
+                    if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+                    assetId = uploadData.id;
+                }
+                if (statusEl) statusEl.textContent = 'Saving…';
+                const body = {
+                    published_on: document.getElementById('bulletin-published-on').value,
+                    label: document.getElementById('bulletin-label').value,
+                    asset_id: assetId,
+                };
+                if (editingId) await apiFetch('/api/v1/admin/bulletins/' + editingId, { method: 'PUT', body });
+                else await apiFetch('/api/v1/admin/bulletins', { method: 'POST', body });
                 window.location.reload();
             } catch (err) {
                 if (statusEl) statusEl.textContent = '';
@@ -725,14 +912,21 @@
         });
 
         document.getElementById('bulletin-list')?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('[data-action="delete-bulletin"]');
-            if (!btn) return;
-            const row = closest(btn, '[data-row-id]');
-            if (!row || !confirm('Delete this bulletin?')) return;
-            try {
-                await apiFetch('/api/v1/admin/bulletins/' + row.dataset.rowId, { method: 'DELETE' });
-                row.remove();
-            } catch (err) { toast(err.message, 'error'); }
+            const row = closest(e.target, '[data-row-id]');
+            if (!row) return;
+            if (e.target.closest('[data-action="edit-bulletin"]')) {
+                editingId = row.dataset.rowId;
+                setMode(true, { 'bulletin-published-on': row.dataset.publishedOn, 'bulletin-label': row.dataset.label }, row.dataset.fileName);
+                openModal('new-bulletin-modal');
+                return;
+            }
+            if (e.target.closest('[data-action="delete-bulletin"]')) {
+                if (!confirm('Delete this bulletin?')) return;
+                try {
+                    await apiFetch('/api/v1/admin/bulletins/' + row.dataset.rowId, { method: 'DELETE' });
+                    row.remove();
+                } catch (err) { toast(err.message, 'error'); }
+            }
         });
     }
 
@@ -741,39 +935,121 @@
     function initEvents() {
         const newBtn = document.getElementById('new-event-btn');
         if (!newBtn) return;
-        newBtn.addEventListener('click', () => openModal('new-event-modal'));
-
         const form = document.getElementById('new-event-form');
         const errBox = document.getElementById('new-event-error');
+        let editingId = null;
+
+        newBtn.addEventListener('click', () => {
+            editingId = null;
+            setFormMode(form, { editing: false, title: 'New event', fields: {} });
+            openModal('new-event-modal');
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hide(errBox);
+            const body = {
+                slug: document.getElementById('event-slug').value,
+                title: document.getElementById('event-title-input').value,
+                location: document.getElementById('event-location').value,
+                starts_at: document.getElementById('event-starts-at').value,
+                ends_at: document.getElementById('event-ends-at').value,
+                body: document.getElementById('event-body').value,
+                featured: document.getElementById('event-featured').checked,
+                tag: document.getElementById('event-tag').value,
+                flyer_asset_id: parseInt(document.getElementById('event-flyer-id').value, 10) || 0,
+            };
+            try {
+                if (editingId) await apiFetch('/api/v1/admin/events/' + editingId, { method: 'PUT', body });
+                else await apiFetch('/api/v1/admin/events', { method: 'POST', body });
+                window.location.reload();
+            } catch (err) { showError(errBox, err.message); }
+        });
+
+        document.getElementById('event-list')?.addEventListener('click', async (e) => {
+            const row = closest(e.target, '[data-row-id]');
+            if (!row) return;
+            if (e.target.closest('[data-action="edit-event"]')) {
+                const d = row.dataset;
+                editingId = d.rowId;
+                setFormMode(form, {
+                    editing: true, title: 'Edit event',
+                    fields: {
+                        'event-slug': d.slug, 'event-title-input': d.title, 'event-location': d.location,
+                        'event-starts-at': d.startsAt, 'event-ends-at': d.endsAt, 'event-body': d.body,
+                        'event-featured': d.featured === '1', 'event-tag': d.tag, 'event-flyer-id': d.flyerId,
+                    },
+                });
+                if (d.flyerId) syncFileChoice('event-flyer-id', d.flyerName || fileNameFromURL(d.flyerUrl), d.flyerUrl);
+                openModal('new-event-modal');
+                return;
+            }
+            if (e.target.closest('[data-action="delete-event"]')) {
+                if (!confirm('Delete this event?')) return;
+                try {
+                    await apiFetch('/api/v1/admin/events/' + row.dataset.rowId, { method: 'DELETE' });
+                    row.remove();
+                } catch (err) { toast(err.message, 'error'); }
+            }
+        });
+    }
+
+    // ========== Users (admins only) ==========
+
+    function initUsers() {
+        const table = document.getElementById('user-table');
+        const newBtn = document.getElementById('new-user-btn');
+        if (!table || !newBtn) return;
+        const form = document.getElementById('new-user-form');
+        const errBox = document.getElementById('new-user-error');
+
+        newBtn.addEventListener('click', () => { form.reset(); hide(errBox); openModal('new-user-modal'); });
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             hide(errBox);
             try {
-                await apiFetch('/api/v1/admin/events', {
+                await apiFetch('/api/v1/admin/users', {
                     method: 'POST',
                     body: {
-                        slug: document.getElementById('event-slug').value,
-                        title: document.getElementById('event-title-input').value,
-                        location: document.getElementById('event-location').value,
-                        starts_at: document.getElementById('event-starts-at').value,
-                        ends_at: document.getElementById('event-ends-at').value,
-                        body: document.getElementById('event-body').value,
-                        featured: document.getElementById('event-featured').checked,
-                        tag: document.getElementById('event-tag').value,
+                        first_name: document.getElementById('nu-first').value.trim(),
+                        last_name: document.getElementById('nu-last').value.trim(),
+                        email: document.getElementById('nu-email').value.trim(),
+                        role: document.getElementById('nu-role').value,
+                        password: document.getElementById('nu-password').value,
                     },
                 });
                 window.location.reload();
             } catch (err) { showError(errBox, err.message); }
         });
 
-        document.getElementById('event-list')?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('[data-action="delete-event"]');
-            if (!btn) return;
-            const row = closest(btn, '[data-row-id]');
-            if (!row || !confirm('Delete this event?')) return;
+        table.addEventListener('change', async (e) => {
+            const sel = e.target.closest('[data-action="set-role"]');
+            if (!sel) return;
+            const row = closest(sel, '[data-user-id]');
             try {
-                await apiFetch('/api/v1/admin/events/' + row.dataset.rowId, { method: 'DELETE' });
-                row.remove();
+                await apiFetch(`/api/v1/admin/users/${row.dataset.userId}/role`, { method: 'PUT', body: { role: sel.value } });
+                toast('Role updated', 'ok');
+            } catch (err) { toast(err.message, 'error'); }
+        });
+
+        table.addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn || btn.tagName === 'SELECT') return;
+            const row = closest(btn, '[data-user-id]');
+            const id = row.dataset.userId;
+            const name = row.dataset.userName.trim();
+            try {
+                if (btn.dataset.action === 'set-active') {
+                    const active = btn.dataset.active === 'true';
+                    if (!active && !confirm(`Deactivate ${name}? They will not be able to sign in.`)) return;
+                    await apiFetch(`/api/v1/admin/users/${id}/status`, { method: 'PUT', body: { is_active: active } });
+                    window.location.reload();
+                } else if (btn.dataset.action === 'reset-password') {
+                    const pw = prompt(`New temporary password for ${name} (at least 10 characters):`);
+                    if (pw == null) return;
+                    await apiFetch(`/api/v1/admin/users/${id}/password`, { method: 'PUT', body: { password: pw } });
+                    toast('Password updated. Share it with them privately.', 'ok');
+                }
             } catch (err) { toast(err.message, 'error'); }
         });
     }
@@ -790,6 +1066,11 @@
     }
     function hide(el) { if (el) el.hidden = true; }
     function showError(el, msg) { if (!el) return; el.textContent = msg; el.hidden = false; }
+    function slugifyText(s) {
+        return String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '')
+            .toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '');
+    }
 
     // ---------- Asset Library (/admin/assets) ----------
     (function initAssetLibrary() {

@@ -95,12 +95,20 @@ func (h *PageHandler) Render(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not found")
 		return
 	}
+	isDraftPreview := false
 	if !page.IsPublished() {
-		c.String(http.StatusNotFound, "Not found")
-		return
+		u, ok := c.Get("user")
+		if staff, isUser := u.(models.User); !ok || !isUser || !staff.IsStaff() {
+			c.String(http.StatusNotFound, "Not found")
+			return
+		}
+		isDraftPreview = true
 	}
 
 	rendered := RenderBlocks(page.Blocks, h.db)
+	if isDraftPreview {
+		rendered = `<p class="parish-draft-banner"><i class="fas fa-eye-slash"></i> Draft preview — this page is not public yet. Only signed-in staff can see it.</p>` + rendered
+	}
 
 	data := gin.H{
 		"title":        page.Title + " — Our Lady of the Valley Parish",

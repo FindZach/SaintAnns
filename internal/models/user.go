@@ -34,6 +34,12 @@ func (u User) IsAdmin() bool {
 	return u.Role == RoleAdmin
 }
 
+// IsStaff reports whether the user can use the admin panel at all. Staff can
+// edit all parish content; only admins can manage user accounts.
+func (u User) IsStaff() bool {
+	return u.Role == RoleStaff || u.Role == RoleAdmin
+}
+
 func (u User) DisplayName() string {
 	name := u.FirstName
 	if u.LastName != "" {

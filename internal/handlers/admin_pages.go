@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +49,31 @@ func (h *AdminPagesHandler) List(c *gin.Context) {
 
 	data := h.pageData(c, "admin-pages", "Pages — Admin — OLV Parish")
 	data["pages"] = rows
+	data["parentOptions"] = parentOptionsFrom(pages, "")
 	c.HTML(http.StatusOK, "admin-pages.html", data)
+}
+
+type parentOption struct {
+	Slug, Label string
+}
+
+// parentOptionsFrom lists pages that can hold children, excluding `self` and
+// its descendants. Labels are indented by depth so the tree is readable.
+func parentOptionsFrom(pages []models.Page, self string) []parentOption {
+	sorted := append([]models.Page(nil), pages...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Slug < sorted[j].Slug })
+	out := make([]parentOption, 0, len(sorted))
+	for _, p := range sorted {
+		if self != "" && (p.Slug == self || strings.HasPrefix(p.Slug, self+"/")) {
+			continue
+		}
+		depth := strings.Count(p.Slug, "/")
+		if depth > 1 {
+			continue // keep the menu to sections and their direct sub-pages
+		}
+		out = append(out, parentOption{Slug: p.Slug, Label: strings.Repeat("— ", depth) + p.Title})
+	}
+	return out
 }
 
 // Edit renders /admin/pages/:slug — the block editor.
@@ -70,9 +95,13 @@ func (h *AdminPagesHandler) Edit(c *gin.Context) {
 		blocksJSON = []byte("[]")
 	}
 
+	var all []models.Page
+	h.db.Order("slug ASC").Find(&all)
+
 	data := h.pageData(c, "admin-page-edit", "Edit — "+page.Title+" — Admin")
 	data["pageRow"] = page
 	data["blocksJSON"] = string(blocksJSON)
+	data["parentOptions"] = parentOptionsFrom(all, page.Slug)
 	c.HTML(http.StatusOK, "admin-page-edit.html", data)
 }
 
@@ -80,9 +109,10 @@ func (h *AdminPagesHandler) Edit(c *gin.Context) {
 func (h *AdminPagesHandler) APISave(c *gin.Context) {
 	slug := strings.Trim(c.Param("slug"), "/")
 	var req struct {
-		Title           string         `json:"title"`
-		NavLabel        string         `json:"nav_label"`
+		Title    string `json:"title"`
+		NavLabel string `json:"nav_label"`
 		// Pointers so a request that omits these leaves the stored values alone.
+		ParentSlug      *string        `json:"parent_slug"`
 		MetaDescription *string        `json:"meta_description"`
 		HeroImageSlot   *string        `json:"hero_image_slot"`
 		Blocks          []models.Block `json:"blocks"`
@@ -104,8 +134,16 @@ func (h *AdminPagesHandler) APISave(c *gin.Context) {
 		page.Title = page.Slug
 	}
 	page.NavLabel = req.NavLabel
+	if req.ParentSlug != nil {
+		parent := strings.Trim(*req.ParentSlug, "/")
+		if parent == page.Slug || strings.HasPrefix(parent, page.Slug+"/") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "A page can't be placed under itself"})
+			return
+		}
+		page.ParentSlug = parent
+	}
 	if req.MetaDescription != nil {
-		page.MetaDescription = *req.MetaDescription
+		page.MetaDescription = strings.TrimSpace(*req.MetaDescription)
 	}
 	if req.HeroImageSlot != nil {
 		page.HeroImageSlot = *req.HeroImageSlot
@@ -138,21 +176,31 @@ func (h *AdminPagesHandler) APICreate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	parent := strings.Trim(req.ParentSlug, "/")
 	slug := strings.Trim(req.Slug, "/")
-	if slug == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Slug is required"})
+	if slug == "" || !validSlugPath(slug) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "The address can only use lowercase letters, numbers and dashes"})
 		return
+	}
+	if parent != "" && !strings.HasPrefix(slug, parent+"/") {
+		slug = parent + "/" + slug
 	}
 
 	var existing models.Page
-	if err := h.db.Where("slug = ?", slug).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "A page with that slug already exists"})
-		return
+	if err := h.db.Unscoped().Where("slug = ?", slug).First(&existing).Error; err == nil {
+		if existing.DeletedAt.Valid {
+			// A previously deleted page held this address; clear it out so the
+			// unique index doesn't block the new page.
+			h.db.Unscoped().Delete(&existing)
+		} else {
+			c.JSON(http.StatusConflict, gin.H{"error": "A page already exists at /" + slug + "/"})
+			return
+		}
 	}
 
 	page := models.Page{
 		Slug:       slug,
-		ParentSlug: req.ParentSlug,
+		ParentSlug: parent,
 		Title:      req.Title,
 		NavLabel:   req.NavLabel,
 		Blocks:     models.Blocks{},

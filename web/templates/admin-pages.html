@@ -28,7 +28,7 @@
                 <tbody>
                     {{range .pages}}
                     <tr data-page-id="{{.ID}}" data-page-slug="{{.Slug}}">
-                        <td><code>{{.Slug}}</code></td>
+                        <td><code>/{{.Slug}}/</code></td>
                         <td><a href="/admin/pages/{{.Slug}}" class="parish-admin-link">{{.Title}}</a></td>
                         <td>{{.BlockCount}}</td>
                         <td>
@@ -68,17 +68,31 @@
                 </header>
                 <form id="new-page-form" class="parish-form">
                     <div class="parish-field">
-                        <label for="new-page-slug">Slug <span class="parish-field-optional">(URL path, no leading slash)</span></label>
-                        <input type="text" id="new-page-slug" name="slug" required placeholder="about/mission">
-                    </div>
-                    <div class="parish-field">
                         <label for="new-page-title-input">Title</label>
                         <input type="text" id="new-page-title-input" name="title" required placeholder="Our Mission">
                     </div>
                     <div class="parish-field">
-                        <label for="new-page-nav-label">Nav label <span class="parish-field-optional">(optional)</span></label>
+                        <label for="new-page-parent">Section</label>
+                        <select id="new-page-parent">
+                            <option value="">— Top level (not under a section) —</option>
+                            {{range .parentOptions}}
+                            <option value="{{.Slug}}">{{.Label}}</option>
+                            {{end}}
+                        </select>
+                        <p class="parish-field-hint">The page appears in this section's menu dropdown.</p>
+                    </div>
+                    <div class="parish-field">
+                        <label for="new-page-slug">Web address</label>
+                        <div class="parish-slug-input">
+                            <span id="new-page-slug-prefix">/</span><input type="text" id="new-page-slug" name="slug" required placeholder="our-mission" pattern="[a-z0-9]+(-[a-z0-9]+)*" title="Lowercase letters, numbers and dashes">
+                        </div>
+                        <p class="parish-field-hint">Filled in from the title; lowercase letters, numbers and dashes.</p>
+                    </div>
+                    <div class="parish-field">
+                        <label for="new-page-nav-label">Menu label <span class="parish-field-optional">(optional — a shorter name for the menu)</span></label>
                         <input type="text" id="new-page-nav-label" name="nav_label" placeholder="Mission">
                     </div>
+                    <p class="parish-field-hint">New pages start as drafts. Publish from the editor when ready.</p>
                     <p id="new-page-error" class="parish-form-error" role="alert" hidden></p>
                     <div class="parish-admin-modal-actions">
                         <button type="button" class="parish-btn parish-btn-ghost" data-modal-close>Cancel</button>

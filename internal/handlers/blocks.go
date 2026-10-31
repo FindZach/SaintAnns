@@ -354,7 +354,7 @@ func renderEventList(out *strings.Builder, raw json.RawMessage, db *gorm.DB) {
 	for _, e := range events {
 		fmt.Fprintf(out, `<li><a href="/events-news/%s"><time>%s</time><strong>%s</strong></a></li>`,
 			html.EscapeString(e.Slug),
-			html.EscapeString(e.StartsAt.Format("Mon Jan 2 · 3:04 PM")),
+			html.EscapeString(e.LocalStart().Format("Mon Jan 2 · 3:04 PM")),
 			html.EscapeString(e.Title))
 	}
 	out.WriteString(`</ul>`)
