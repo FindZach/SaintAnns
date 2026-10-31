@@ -21,17 +21,32 @@
         const btn = document.getElementById('mobile-menu-btn');
         const menu = document.getElementById('mobile-menu');
         if (!btn || !menu) return;
+        const close = () => {
+            menu.setAttribute('hidden', '');
+            menu.classList.remove('is-open');
+            btn.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('parish-menu-open');
+        };
         btn.addEventListener('click', () => {
-            const open = !menu.hasAttribute('hidden');
-            if (open) {
-                menu.setAttribute('hidden', '');
-                menu.classList.remove('is-open');
-                btn.setAttribute('aria-expanded', 'false');
-            } else {
-                menu.removeAttribute('hidden');
-                menu.classList.add('is-open');
-                btn.setAttribute('aria-expanded', 'true');
+            if (!menu.hasAttribute('hidden')) {
+                close();
+                return;
             }
+            menu.removeAttribute('hidden');
+            menu.classList.add('is-open');
+            btn.setAttribute('aria-expanded', 'true');
+            // Height of whatever is above the menu on screen right now (the
+            // utility strip scrolls away, the sticky bar doesn't).
+            const top = Math.max(0, menu.getBoundingClientRect().top);
+            menu.style.setProperty('--mobile-menu-top', top + 'px');
+            menu.scrollTop = 0;
+            document.body.classList.add('parish-menu-open');
+        });
+        menu.addEventListener('click', (e) => {
+            if (e.target.closest('a')) close();
+        });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 900 && !menu.hasAttribute('hidden')) close();
         });
     }
 

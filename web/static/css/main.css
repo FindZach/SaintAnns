@@ -226,7 +226,18 @@ a:hover { color: var(--parish-navy); }
     border-top: 1px solid var(--parish-rule);
 }
 .parish-nav-mobile[hidden] { display: none !important; }
-.parish-nav-mobile.is-open { display: flex; }
+/* The header is sticky, so a menu taller than the screen can't be reached
+   by scrolling the page. Cap it to the space below the header bar and let
+   it scroll on its own. --mobile-menu-top is set by main.js on open. */
+.parish-nav-mobile.is-open {
+    display: flex;
+    max-height: calc(100vh - var(--mobile-menu-top, 64px));
+    max-height: calc(100dvh - var(--mobile-menu-top, 64px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+body.parish-menu-open { overflow: hidden; }
 .parish-nav-mobile-link {
     padding: 0.75rem 1rem;
     color: var(--parish-ink);
