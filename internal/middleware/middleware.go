@@ -23,6 +23,7 @@ func SetupMiddleware(router *gin.Engine, cfg *config.Config) {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+	router.Use(SameOriginWrites(cfg.Frontend.URL, "http://localhost:8080"))
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())

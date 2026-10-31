@@ -192,8 +192,12 @@ func renderVideoEmbed(out *strings.Builder, raw json.RawMessage) {
 	src := videoEmbedURL(d.Provider, d.URL)
 	if src == "" {
 		// Fall back to a link so the content isn't lost.
+		href, ok := safeLinkURL(d.URL)
+		if !ok {
+			return
+		}
 		fmt.Fprintf(out, `<p class="parish-block-video-link"><a href="%s" target="_blank" rel="noopener">%s</a></p>`,
-			html.EscapeString(d.URL), html.EscapeString(d.URL))
+			html.EscapeString(href), html.EscapeString(d.URL))
 		return
 	}
 	fmt.Fprintf(out, `<div class="parish-block-video"><iframe src="%s" title="Embedded video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`,
@@ -211,11 +215,16 @@ func renderCTAButton(out *strings.Builder, raw json.RawMessage) {
 	if err := json.Unmarshal(raw, &d); err != nil || d.Href == "" || d.Label == "" {
 		return
 	}
+	href, ok := safeLinkURL(d.Href)
+	if !ok {
+		return
+	}
+	d.Href = href
 	class := "parish-btn parish-btn-primary"
 	if d.Style == "ghost" {
 		class = "parish-btn parish-btn-ghost"
 	}
-	external := strings.HasPrefix(d.Href, "http") || strings.HasPrefix(d.Href, "https")
+	external := strings.HasPrefix(d.Href, "http://") || strings.HasPrefix(d.Href, "https://")
 	rel := ""
 	target := ""
 	if external {
@@ -226,18 +235,48 @@ func renderCTAButton(out *strings.Builder, raw json.RawMessage) {
 		html.EscapeString(d.Href), target, rel, class, html.EscapeString(d.Label))
 }
 
+// safeLinkURL accepts http(s), mailto, tel, site-relative paths ("/x") and
+// in-page anchors ("#x"). Anything else — javascript:, data:, vbscript:, and
+// scheme-relative "//host" — is rejected.
+func safeLinkURL(raw string) (string, bool) {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return "", false
+	}
+	if strings.HasPrefix(s, "#") {
+		return s, true
+	}
+	if strings.HasPrefix(s, "/") {
+		if strings.HasPrefix(s, "//") || strings.HasPrefix(s, "/\\") {
+			return "", false
+		}
+		return s, true
+	}
+	if !strings.Contains(s, ":") {
+		return s, true // relative path; without a colon there's no scheme
+	}
+	u, err := url.Parse(s)
+	if err != nil || u.Scheme == "" {
+		return "", false
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "http", "https", "mailto", "tel":
+		return s, true
+	}
+	return "", false
+}
+
 type htmlRawData struct {
 	HTML string `json:"html"`
 }
 
-// renderHTMLRaw emits user-supplied HTML verbatim. The block is admin-only in
-// the editor; it still passes through sanitizeHTML to strip scripts.
+// renderHTMLRaw emits admin-supplied HTML through the embed allowlist.
 func renderHTMLRaw(out *strings.Builder, raw json.RawMessage) {
 	var d htmlRawData
 	if err := json.Unmarshal(raw, &d); err != nil || d.HTML == "" {
 		return
 	}
-	out.WriteString(sanitizeHTML(d.HTML))
+	out.WriteString(sanitizeEmbedHTML(d.HTML))
 }
 
 // ---------- Dynamic blocks (DB-driven) ----------
@@ -556,12 +595,11 @@ func loadAsset(db *gorm.DB, id uint) *models.Asset {
 	return &asset
 }
 
-// Compiled once at package load. These strip entire script/style/noscript
-// elements including their contents (case-insensitive, dot matches newline);
-// the previous "substring remove" approach left the JS body behind as text.
+// WordPress-import cleanup patterns, applied before the allowlist sanitizer
+// (they need the original <script> tags to recover obfuscated emails).
 var (
-	scriptBlockRE   = regexp.MustCompile(`(?is)<script[^>]*>.*?</script\s*>`)
-	styleBlockRE    = regexp.MustCompile(`(?is)<style[^>]*>.*?</style\s*>`)
+	// The allowlist keeps the text inside disallowed tags, which would leave
+	// "*protected email*" visible, so <noscript> is removed whole first.
 	noscriptBlockRE = regexp.MustCompile(`(?is)<noscript[^>]*>.*?</noscript\s*>`)
 	// WP "Email Encoder Bundle" leaves this pair: <span id="eeb-N-M"></span>
 	// followed by a script that URL-decodes the real address into the span.
@@ -572,18 +610,23 @@ var (
 	wpEEBScriptBodyRE = regexp.MustCompile(`(?is)\s*type="text/javascript">[^<]*decodeURIComponent\("([^"]+)"\)[^<]*>`)
 	// Another WP encoder variant: <a href=";" data-enc-email="rot13[at]rot13" ...>label</a>
 	wpEncLinkRE = regexp.MustCompile(`(?is)<a[^>]*data-enc-email="([^"]+)"[^>]*>(.*?)</a>`)
-	// On-attribute event handlers; strip after block removals so we don't try
-	// to parse attributes we already deleted.
-	onEventRE = regexp.MustCompile(`(?i)\s(on(?:click|load|error|focus|mouseover|submit|change|blur|keyup|keydown|input))\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)`)
 )
 
-// sanitizeHTML removes elements that have no place in parish body copy and
-// cleans up leftovers from the WordPress import. In order:
-//  1. Delete entire <script>, <style>, <noscript> elements (contents included).
-//  2. Decode "Email Encoder Bundle" obfuscations into plain mailto links so
-//     an address like david.prete@dor.org is kept, not stripped.
-//  3. Scrub on-event attributes and javascript: URLs.
+// sanitizeHTML cleans rich-text page content: WordPress email-encoder
+// leftovers are decoded into mailto links, then everything passes through
+// an allowlist sanitizer (see sanitize.go) that keeps only known-safe tags,
+// attributes, link schemes and inline styles.
 func sanitizeHTML(in string) string {
+	return contentPolicy.Sanitize(decodeWordPressLeftovers(in))
+}
+
+// sanitizeEmbedHTML is sanitizeHTML plus iframes from known embed providers,
+// used by the "Embedded HTML" block.
+func sanitizeEmbedHTML(in string) string {
+	return embedPolicy.Sanitize(decodeWordPressLeftovers(in))
+}
+
+func decodeWordPressLeftovers(in string) string {
 	s := in
 
 	// (2a) Encoder "pair" form: <span id="eeb-…"></span><script>decodeURIComponent("…")</script>
@@ -609,10 +652,6 @@ func sanitizeHTML(in string) string {
 		return ""
 	})
 
-	// (1) Now that encoder matches used the script tags, remove any surviving
-	// script/style/noscript blocks whole.
-	s = scriptBlockRE.ReplaceAllString(s, "")
-	s = styleBlockRE.ReplaceAllString(s, "")
 	s = noscriptBlockRE.ReplaceAllString(s, "")
 
 	// (2c) Encoder "body-only" form left by the previous sanitizer: `
@@ -628,11 +667,6 @@ func sanitizeHTML(in string) string {
 		}
 		return ""
 	})
-
-	// (3) Scrub on-event handlers and javascript: urls.
-	s = onEventRE.ReplaceAllString(s, "")
-	s = strings.ReplaceAll(s, "javascript:", "about:blank#")
-	s = strings.ReplaceAll(s, "JAVASCRIPT:", "about:blank#")
 
 	return s
 }

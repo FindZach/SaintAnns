@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"olv-parish/internal/auth"
 	"olv-parish/internal/config"
@@ -87,15 +88,25 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	ip := c.ClientIP()
+	if wait := defaultLoginLimiter.blockedFor(ip, req.Email); wait > 0 {
+		c.Header("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many sign-in attempts. Please wait 15 minutes and try again."})
+		return
+	}
+
 	var user models.User
 	if err := h.db.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		defaultLoginLimiter.recordFailure(ip, req.Email)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 	if !auth.CheckPasswordHash(req.Password, user.Password) {
+		defaultLoginLimiter.recordFailure(ip, req.Email)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
+	defaultLoginLimiter.recordSuccess(ip, req.Email)
 	if !user.IsActive {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account is inactive"})
 		return

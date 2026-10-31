@@ -377,15 +377,24 @@
         wireAssetPicker();
     }
 
+    // Block types the server renders but this editor has no form for. They're
+    // shown read-only and saved back exactly as loaded.
+    const PASSTHROUGH_LABELS = {
+        child_pages: ['fa-sitemap', 'Sub-page cards (generated automatically)'],
+        image_row: ['fa-images', 'Image row'],
+        html_raw: ['fa-code', 'Embedded HTML'],
+    };
+
     function makeBlockEl(type, data) {
         const def = BLOCK_TYPES[type];
         const el = document.createElement('article');
         el.className = 'parish-editor-block';
         el.setAttribute('data-block-type', type);
+        el._originalData = Object.assign({}, data || {});
         el.innerHTML = `
             <header class="parish-editor-block-head">
                 <span class="parish-editor-block-handle" aria-label="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>
-                <span class="parish-editor-block-type"><i class="fas ${def ? def.icon : 'fa-cube'}"></i> ${def ? def.label : type}</span>
+                <span class="parish-editor-block-type"><i class="fas ${def ? def.icon : (PASSTHROUGH_LABELS[type] || ['fa-cube'])[0]}"></i> ${def ? def.label : escText((PASSTHROUGH_LABELS[type] || [null, type])[1])}</span>
                 <button type="button" class="parish-editor-block-remove" data-action="remove-block" aria-label="Remove block">
                     <i class="fas fa-times"></i>
                 </button>
@@ -396,7 +405,7 @@
             body.innerHTML = def.render(Object.assign({}, def.default, data || {}));
             if (typeof def.afterRender === 'function') def.afterRender(body, data || {});
         } else {
-            body.innerHTML = `<p class="parish-admin-empty">Unknown block type: <code>${escText(type)}</code></p>`;
+            body.innerHTML = `<p class="parish-admin-empty">This block can't be edited here yet. It will be kept as-is when you save — drag to move it, or remove it with ✕.</p>`;
         }
         el.querySelector('[data-action="remove-block"]').addEventListener('click', () => {
             if (confirm('Remove this block?')) el.remove();
@@ -443,9 +452,14 @@
         editor.querySelectorAll('.parish-editor-block').forEach((el) => {
             const type = el.getAttribute('data-block-type');
             const def = BLOCK_TYPES[type];
-            if (!def) return;
-            const data = def.collect(el.querySelector('.parish-editor-block-body')) || {};
-            blocks.push({ type, data });
+            const original = el._originalData || {};
+            if (!def) {
+                blocks.push({ type, data: original });
+                return;
+            }
+            // Start from what was loaded so fields this form doesn't expose survive.
+            const collected = def.collect(el.querySelector('.parish-editor-block-body')) || {};
+            blocks.push({ type, data: Object.assign({}, original, collected) });
         });
 
         const statusEl = document.getElementById('editor-status');

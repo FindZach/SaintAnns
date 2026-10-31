@@ -82,8 +82,9 @@ func (h *AdminPagesHandler) APISave(c *gin.Context) {
 	var req struct {
 		Title           string         `json:"title"`
 		NavLabel        string         `json:"nav_label"`
-		MetaDescription string         `json:"meta_description"`
-		HeroImageSlot   string         `json:"hero_image_slot"`
+		// Pointers so a request that omits these leaves the stored values alone.
+		MetaDescription *string        `json:"meta_description"`
+		HeroImageSlot   *string        `json:"hero_image_slot"`
 		Blocks          []models.Block `json:"blocks"`
 		Publish         bool           `json:"publish"`
 	}
@@ -103,8 +104,12 @@ func (h *AdminPagesHandler) APISave(c *gin.Context) {
 		page.Title = page.Slug
 	}
 	page.NavLabel = req.NavLabel
-	page.MetaDescription = req.MetaDescription
-	page.HeroImageSlot = req.HeroImageSlot
+	if req.MetaDescription != nil {
+		page.MetaDescription = *req.MetaDescription
+	}
+	if req.HeroImageSlot != nil {
+		page.HeroImageSlot = *req.HeroImageSlot
+	}
 	page.Blocks = models.Blocks(req.Blocks)
 	if req.Publish && page.PublishedAt == nil {
 		now := time.Now()
