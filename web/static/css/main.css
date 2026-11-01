@@ -777,7 +777,7 @@ body.parish-menu-open { overflow: hidden; }
     border-left: 3px solid var(--parish-gold);
     margin: 0 0 1rem; padding: 0.25rem 0 0.25rem 1rem; font-style: italic;
 }
-.parish-block-rich img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+.parish-block-rich img { display: inline-block; vertical-align: middle; max-width: 100%; height: auto; border-radius: 0.5rem; }
 .parish-block-divider {
     border: 0;
     border-top: 1px solid var(--parish-rule);
