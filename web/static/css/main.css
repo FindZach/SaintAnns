@@ -1475,7 +1475,7 @@ body.parish-menu-open { overflow: hidden; }
 }
 
 /* ---------- Block editor ---------- */
-.parish-admin-main-editor { max-width: 900px; }
+.parish-admin-main-editor { max-width: none; }
 .parish-editor-head {
     display: flex; justify-content: space-between; align-items: flex-start;
     gap: 1rem; flex-wrap: wrap;
@@ -1571,10 +1571,18 @@ body.parish-menu-open { overflow: hidden; }
     min-width: 200px;
 }
 .parish-block-fields textarea { min-width: 100%; min-height: 100px; font-family: inherit; }
+.parish-block-fields > label.parish-block-fields-full { flex: 1 1 100%; }
+.parish-block-fields-full textarea {
+    width: 100%; min-height: 220px; max-height: 70vh;
+    resize: vertical; line-height: 1.5; font-size: 0.9rem;
+}
 .parish-block-fields-grow { flex: 1 1 240px; }
 .parish-block-fields-stack {
     display: flex; flex-direction: column; gap: 0.5rem; flex: 1;
 }
+.parish-block-fields-stack > label { display: flex; flex-direction: column; gap: 0.3rem; }
+.parish-block-fields-stack input, .parish-block-fields-stack select { width: 100%; }
+.parish-block-fields-stack > button { align-self: flex-start; }
 .parish-block-asset-preview {
     width: 150px; height: 100px;
     background: var(--parish-cream-warm);

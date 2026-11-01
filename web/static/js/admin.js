@@ -291,12 +291,20 @@
             default: { html: '' },
             render(d) {
                 return `<div class="parish-block-fields">
-                    <label>Body (HTML allowed)
-                        <textarea data-field="html" rows="6">${escText(d.html || '')}</textarea>
+                    <label class="parish-block-fields-full">Body (HTML allowed)
+                        <textarea data-field="html" rows="10">${escText(d.html || '')}</textarea>
                     </label>
                 </div>`;
             },
             collect(el) { return { html: el.querySelector('[data-field="html"]').value }; },
+            afterRender(el) {
+                // Grow the box to fit its text (up to the CSS max-height) so
+                // long pages aren't read through a keyhole.
+                const ta = el.querySelector('textarea');
+                const fit = () => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 4) + 'px'; };
+                ta.addEventListener('input', fit);
+                requestAnimationFrame(fit);
+            },
         },
         image: {
             label: 'Image', icon: 'fa-image',
