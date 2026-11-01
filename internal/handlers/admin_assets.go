@@ -7,6 +7,7 @@ import (
 	_ "image/png"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -75,6 +76,26 @@ func (h *AdminAssetsHandler) LibraryPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin-assets.html", data)
 }
 
+// assetDisplayName is the name staff see for a file. Imported files kept the
+// full address they were downloaded from as their original name, which made
+// every card read "https://www.olv14843.org/wp-…"; show just the file name.
+func assetDisplayName(original, path string) string {
+	name := strings.TrimSpace(original)
+	if name == "" {
+		name = path
+	}
+	if i := strings.LastIndexAny(name, "/\\"); i >= 0 {
+		name = name[i+1:]
+	}
+	if decoded, err := url.PathUnescape(name); err == nil {
+		name = decoded
+	}
+	if name == "" {
+		return original
+	}
+	return name
+}
+
 // APIList returns the asset library (optionally filtered by kind=image|pdf).
 func (h *AdminAssetsHandler) APIList(c *gin.Context) {
 	q := h.db.Order("created_at DESC").Limit(500)
@@ -93,6 +114,7 @@ func (h *AdminAssetsHandler) APIList(c *gin.Context) {
 			"kind":          a.Kind,
 			"url":           a.URL(),
 			"original_name": a.OriginalName,
+			"name":          assetDisplayName(a.OriginalName, a.Path),
 			"alt_text":      a.AltText,
 			"width":         a.Width,
 			"height":        a.Height,

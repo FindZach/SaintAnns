@@ -72,3 +72,18 @@ func TestRoles(t *testing.T) {
 		t.Error("unknown roles must not get admin-panel access")
 	}
 }
+
+func TestAssetDisplayName(t *testing.T) {
+	cases := []struct{ original, path, want string }{
+		{"https://www.olv14843.org/wp-content/uploads/Quest20Logo.jpg", "", "Quest20Logo.jpg"},
+		{"https://example.org/files/Fall%20Festival.pdf", "", "Fall Festival.pdf"},
+		{"bulletin.pdf", "", "bulletin.pdf"},
+		{`C:\Users\office\Desktop\flyer.png`, "", "flyer.png"},
+		{"", "uploads/2026/10/abc-photo.jpg", "abc-photo.jpg"},
+	}
+	for _, c := range cases {
+		if got := assetDisplayName(c.original, c.path); got != c.want {
+			t.Errorf("assetDisplayName(%q, %q) = %q, want %q", c.original, c.path, got, c.want)
+		}
+	}
+}

@@ -87,7 +87,7 @@
                 const id = btn.dataset.pickPdf;
                 openAssetPicker('pdf', (a) => {
                     document.getElementById(id).value = a.url;
-                    syncFileChoice(id, a.original_name || fileNameFromURL(a.url));
+                    syncFileChoice(id, a.name || a.original_name || fileNameFromURL(a.url));
                 });
             });
         });
@@ -96,8 +96,8 @@
                 const id = btn.dataset.pickImage;
                 openAssetPicker('image', (a) => {
                     document.getElementById(id).value = a.id;
-                    syncFileChoice(id, a.original_name || fileNameFromURL(a.url), a.url);
-                });
+                    syncFileChoice(id, a.name || a.original_name || fileNameFromURL(a.url), a.url);
+                }, document.getElementById(id).value);
             });
         });
         document.querySelectorAll('[data-clear-file]').forEach((btn) => {
@@ -256,6 +256,16 @@
                 } catch (err) { toast(err.message, 'error'); }
             });
         });
+    }
+
+    let imageAssetsPromise = null;
+    function imageAssetsOnce() {
+        if (!imageAssetsPromise) {
+            imageAssetsPromise = apiFetch('/api/v1/admin/assets?kind=image')
+                .then((d) => d.assets || [])
+                .catch(() => { imageAssetsPromise = null; return []; });
+        }
+        return imageAssetsPromise;
     }
 
     // ========== Rich text editor (Text blocks) ==========
@@ -512,7 +522,7 @@
                             if (sel.rangeCount && !sel.isCollapsed) {
                                 exec('createLink', asset.url);
                             } else {
-                                insertClean(`<a href="${escAttr(asset.url)}">${escText(asset.original_name || 'Download PDF')}</a>`);
+                                insertClean(`<a href="${escAttr(asset.url)}">${escText(asset.name || asset.original_name || 'Download PDF')}</a>`);
                             }
                         });
                         return;
@@ -625,7 +635,8 @@
                             ${d.asset_id ? '<img data-asset-img>' : '<span class="parish-block-asset-empty">No image chosen</span>'}
                         </div>
                         <div class="parish-block-fields-stack">
-                            <button type="button" class="parish-admin-link" data-action="pick-image">Pick image</button>
+                            <p class="parish-block-asset-name" data-asset-name hidden></p>
+                            <button type="button" class="parish-admin-link" data-action="pick-image">${d.asset_id ? 'Change image' : 'Pick image'}</button>
                             <label>Alt text <input type="text" data-field="alt" value="${escAttr(d.alt || '')}"></label>
                             <label>Caption <input type="text" data-field="caption" value="${escAttr(d.caption || '')}"></label>
                             <label>Size
@@ -648,22 +659,35 @@
             },
             afterRender(el) {
                 const previewEl = el.querySelector('[data-asset-id]');
-                const img = previewEl.querySelector('[data-asset-img]');
-                if (img) img.src = ''; // populated after picker
-                el.querySelector('[data-action="pick-image"]').addEventListener('click', () => {
+                const nameEl = el.querySelector('[data-asset-name]');
+                const pickBtn = el.querySelector('[data-action="pick-image"]');
+                const showName = (asset) => {
+                    const name = asset ? (asset.name || asset.original_name || '') : '';
+                    nameEl.textContent = name;
+                    nameEl.title = name;
+                    nameEl.hidden = !name;
+                };
+                pickBtn.addEventListener('click', () => {
                     openAssetPicker('image', (asset) => {
                         previewEl.setAttribute('data-asset-id', asset.id);
                         previewEl.innerHTML = `<img data-asset-img src="${escAttr(asset.url)}" alt="${escAttr(asset.alt_text || '')}">`;
-                    });
+                        showName(asset);
+                        pickBtn.textContent = 'Change image';
+                    }, previewEl.getAttribute('data-asset-id'));
                 });
-                // Load preview for existing asset_id
+                // Look up the chosen file for its preview and name.
                 const id = previewEl.getAttribute('data-asset-id');
+                const img = previewEl.querySelector('[data-asset-img]');
                 if (id && id !== '0' && img) {
-                    img.src = `/static/uploads/_fallback_until_lookup_${id}`;
-                    fetch('/api/v1/admin/assets?kind=image').then(r => r.json()).then(d => {
-                        const match = (d.assets || []).find(a => a.id == id);
-                        if (match && img) img.src = match.url;
-                    }).catch(() => {});
+                    imageAssetsOnce().then((assets) => {
+                        const match = assets.find((a) => String(a.id) === String(id));
+                        if (match) {
+                            img.src = match.url;
+                            showName(match);
+                        } else {
+                            previewEl.innerHTML = '<span class="parish-block-asset-empty">Image missing — pick another</span>';
+                        }
+                    });
                 }
             },
         },
@@ -693,7 +717,7 @@
                 el.querySelector('[data-action="pick-pdf"]').addEventListener('click', () => {
                     openAssetPicker('pdf', (asset) => {
                         previewEl.setAttribute('data-asset-id', asset.id);
-                        previewEl.innerHTML = `<span class="parish-block-asset-filename">${escText(asset.original_name || 'PDF')}</span>`;
+                        previewEl.innerHTML = `<span class="parish-block-asset-filename">${escText(asset.name || asset.original_name || 'PDF')}</span>`;
                     });
                 });
             },
@@ -956,6 +980,7 @@
     let pickerPendingKind = null;
     let pickerPendingCallback = null;
     let pickerAssets = [];
+    let pickerCurrentId = '';
 
     const PICKER_SORT_KEY = 'olv.assetPickerSort';
     const KIND_WORDS = { image: ['picture', 'pictures'], pdf: ['PDF', 'PDFs'], audio: ['audio file', 'audio files'], video: ['video', 'videos'] };
@@ -980,9 +1005,11 @@
         }
     }
 
-    async function openAssetPicker(kind, callback) {
+    // `currentId` is the file already chosen, if any; it's shown first.
+    async function openAssetPicker(kind, callback, currentId) {
         pickerPendingKind = kind;
         pickerPendingCallback = callback;
+        pickerCurrentId = currentId && currentId !== '0' ? String(currentId) : '';
         const search = document.getElementById('asset-picker-search');
         if (search) search.value = '';
         // A picker opened for one kind (a flyer, a bulletin PDF) only shows
@@ -1008,7 +1035,7 @@
     }
 
     function assetDisplayName(a) {
-        return a.original_name || String(a.url || '').split('/').pop() || '';
+        return a.name || a.original_name || String(a.url || '').split('/').pop() || '';
     }
 
     function renderAssetGrid() {
@@ -1053,40 +1080,60 @@
         }
 
         grid.innerHTML = '';
+        const addHeading = (text) => {
+            const h = document.createElement('h3');
+            h.className = 'parish-asset-group';
+            h.textContent = text;
+            grid.appendChild(h);
+        };
+        // The file already in use goes first, so it's never lost at the bottom
+        // of a long list.
+        const current = pickerCurrentId && !terms.length ? list.find((a) => String(a.id) === pickerCurrentId) : null;
+        if (current) {
+            addHeading('Currently chosen');
+            grid.appendChild(pickerCard(current, true));
+        }
         // Date sorts get month headings so "the bulletin from August" is easy to find.
         const byDate = sort === 'newest' || sort === 'oldest';
         let lastGroup = null;
         list.forEach((a) => {
+            if (a === current) return;
             const created = time(a) ? new Date(time(a)) : null;
             if (byDate) {
                 const group = created ? created.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Earlier';
                 if (group !== lastGroup) {
-                    const h = document.createElement('h3');
-                    h.className = 'parish-asset-group';
-                    h.textContent = group;
-                    grid.appendChild(h);
+                    addHeading(group);
                     lastGroup = group;
                 }
             }
-            const name = assetDisplayName(a);
-            const card = document.createElement('button');
-            card.type = 'button';
-            card.className = 'parish-asset-card';
-            card.title = name;
-            const dateText = created ? created.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-            const meta = `<span class="parish-asset-card-name">${escText(name)}</span>${dateText ? `<span class="parish-asset-card-date">${escText(dateText)}</span>` : ''}`;
-            if (a.kind === 'image') {
-                card.innerHTML = `<img src="${escAttr(a.url)}" alt="${escAttr(a.alt_text || name)}" loading="lazy">${meta}`;
-            } else {
-                const icon = { pdf: 'fa-file-pdf', audio: 'fa-music', video: 'fa-video' }[a.kind] || 'fa-file';
-                card.innerHTML = `<span class="parish-asset-card-filetype"><i class="fas ${icon}"></i></span>${meta}`;
-            }
-            card.addEventListener('click', () => {
-                if (typeof pickerPendingCallback === 'function') pickerPendingCallback(a);
-                closeModal(document.getElementById('asset-picker'));
-            });
-            grid.appendChild(card);
+            grid.appendChild(pickerCard(a, false));
         });
+    }
+
+    function pickerCard(a, isCurrent) {
+        const name = assetDisplayName(a);
+        const created = Date.parse(a.created_at || '') ? new Date(a.created_at) : null;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'parish-asset-card' + (isCurrent ? ' is-current' : '');
+        card.title = name;
+        const dateText = created ? created.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const meta = `<span class="parish-asset-card-name">${escText(name)}</span>${dateText ? `<span class="parish-asset-card-date">${escText(dateText)}</span>` : ''}`;
+        const icon = { pdf: 'fa-file-pdf', audio: 'fa-music', video: 'fa-video' }[a.kind] || 'fa-file';
+        const iconHTML = `<span class="parish-asset-card-filetype"><i class="fas ${icon}"></i></span>`;
+        if (a.kind === 'image') {
+            card.innerHTML = `<img src="${escAttr(a.url)}" alt="" loading="lazy">${meta}`;
+            // A file that isn't really a picture (one import was a Word file)
+            // gets an icon instead of a broken-image box.
+            card.querySelector('img').addEventListener('error', (e) => { e.target.outerHTML = iconHTML; }, { once: true });
+        } else {
+            card.innerHTML = iconHTML + meta;
+        }
+        card.addEventListener('click', () => {
+            if (typeof pickerPendingCallback === 'function') pickerPendingCallback(a);
+            closeModal(document.getElementById('asset-picker'));
+        });
+        return card;
     }
 
     async function uploadAsset(e) {
@@ -1506,7 +1553,7 @@
             const q = activeQuery.trim().toLowerCase();
             const filtered = allAssets.filter(a => {
                 if (activeKind && a.kind !== activeKind) return false;
-                if (q && !((a.original_name || '').toLowerCase().includes(q) ||
+                if (q && !((a.name || a.original_name || '').toLowerCase().includes(q) ||
                            (a.url || '').toLowerCase().includes(q))) return false;
                 return true;
             });
@@ -1515,7 +1562,7 @@
                 return;
             }
             grid.innerHTML = filtered.map(a => {
-                const name = escapeHtml(a.original_name || a.url.split('/').pop());
+                const name = escapeHtml(a.name || a.original_name || a.url.split('/').pop());
                 const url = escapeHtml(a.url);
                 const preview = a.kind === 'image'
                     ? `<img src="${url}" alt="${escapeHtml(a.alt_text || name)}" loading="lazy">`
