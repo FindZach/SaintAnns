@@ -96,6 +96,8 @@ func (h *AdminAssetsHandler) APIList(c *gin.Context) {
 			"alt_text":      a.AltText,
 			"width":         a.Width,
 			"height":        a.Height,
+			"byte_size":     a.ByteSize,
+			"created_at":    a.CreatedAt,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"assets": out})

@@ -107,6 +107,26 @@
             <input type="file" id="asset-upload-input" hidden>
             <span id="asset-upload-status" class="parish-admin-subtitle"></span>
         </div>
+        <div class="parish-asset-picker-tools">
+            <label class="parish-asset-picker-search">
+                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="search" id="asset-picker-search" placeholder="Search by file name" aria-label="Search files">
+            </label>
+            <select id="asset-picker-kind" aria-label="File type" hidden>
+                <option value="">All files</option>
+                <option value="image">Pictures</option>
+                <option value="pdf">PDFs</option>
+                <option value="audio">Audio</option>
+                <option value="video">Video</option>
+            </select>
+            <select id="asset-picker-sort" aria-label="Sort files">
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="az">Name A–Z</option>
+                <option value="za">Name Z–A</option>
+            </select>
+            <span id="asset-picker-count" class="parish-asset-picker-count" aria-live="polite"></span>
+        </div>
         <div id="asset-picker-grid" class="parish-asset-grid"></div>
     </div>
 </div>

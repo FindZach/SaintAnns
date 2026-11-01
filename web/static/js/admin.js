@@ -955,19 +955,43 @@
 
     let pickerPendingKind = null;
     let pickerPendingCallback = null;
+    let pickerAssets = [];
+
+    const PICKER_SORT_KEY = 'olv.assetPickerSort';
+    const KIND_WORDS = { image: ['picture', 'pictures'], pdf: ['PDF', 'PDFs'], audio: ['audio file', 'audio files'], video: ['video', 'videos'] };
 
     function wireAssetPicker() {
         const uploader = document.getElementById('asset-upload-input');
         if (uploader) {
             uploader.addEventListener('change', uploadAsset);
         }
+        const search = document.getElementById('asset-picker-search');
+        const sort = document.getElementById('asset-picker-sort');
+        const kind = document.getElementById('asset-picker-kind');
+        if (search) search.addEventListener('input', renderAssetGrid);
+        if (kind) kind.addEventListener('change', renderAssetGrid);
+        if (sort) {
+            try { sort.value = localStorage.getItem(PICKER_SORT_KEY) || 'newest'; } catch (_) {}
+            if (!sort.value) sort.value = 'newest';
+            sort.addEventListener('change', () => {
+                try { localStorage.setItem(PICKER_SORT_KEY, sort.value); } catch (_) {}
+                renderAssetGrid();
+            });
+        }
     }
 
     async function openAssetPicker(kind, callback) {
         pickerPendingKind = kind;
         pickerPendingCallback = callback;
+        const search = document.getElementById('asset-picker-search');
+        if (search) search.value = '';
+        // A picker opened for one kind (a flyer, a bulletin PDF) only shows
+        // that kind; the type menu is for the open-ended case.
+        const kindSel = document.getElementById('asset-picker-kind');
+        if (kindSel) { kindSel.hidden = !!kind; kindSel.value = ''; }
         openModal('asset-picker');
         await loadAssetGrid(kind);
+        if (search) search.focus();
     }
 
     async function loadAssetGrid(kind) {
@@ -976,31 +1000,93 @@
         grid.innerHTML = '<p class="parish-admin-empty">Loading…</p>';
         try {
             const data = await apiFetch('/api/v1/admin/assets?kind=' + encodeURIComponent(kind || ''));
-            const assets = data.assets || [];
-            if (!assets.length) {
-                grid.innerHTML = '<p class="parish-admin-empty">No assets yet. Upload one above.</p>';
-                return;
-            }
-            grid.innerHTML = '';
-            assets.forEach((a) => {
-                const card = document.createElement('button');
-                card.type = 'button';
-                card.className = 'parish-asset-card';
-                if (a.kind === 'image') {
-                    card.innerHTML = `<img src="${escAttr(a.url)}" alt="${escAttr(a.alt_text || a.original_name || '')}"><span class="parish-asset-card-name">${escText(a.original_name || '')}</span>`;
-                } else {
-                    const icon = { pdf: 'fa-file-pdf', audio: 'fa-music', video: 'fa-video' }[a.kind] || 'fa-file';
-                    card.innerHTML = `<span class="parish-asset-card-filetype"><i class="fas ${icon}"></i></span><span class="parish-asset-card-name">${escText(a.original_name || '')}</span>`;
-                }
-                card.addEventListener('click', () => {
-                    if (typeof pickerPendingCallback === 'function') pickerPendingCallback(a);
-                    closeModal(document.getElementById('asset-picker'));
-                });
-                grid.appendChild(card);
-            });
+            pickerAssets = data.assets || [];
+            renderAssetGrid();
         } catch (err) {
             grid.innerHTML = `<p class="parish-form-error">${escText(err.message)}</p>`;
         }
+    }
+
+    function assetDisplayName(a) {
+        return a.original_name || String(a.url || '').split('/').pop() || '';
+    }
+
+    function renderAssetGrid() {
+        const grid = document.getElementById('asset-picker-grid');
+        if (!grid) return;
+        const countEl = document.getElementById('asset-picker-count');
+        const q = ((document.getElementById('asset-picker-search') || {}).value || '').trim().toLowerCase();
+        const sort = ((document.getElementById('asset-picker-sort') || {}).value) || 'newest';
+        const kindFilter = pickerPendingKind || ((document.getElementById('asset-picker-kind') || {}).value) || '';
+
+        if (!pickerAssets.length) {
+            grid.innerHTML = '<p class="parish-admin-empty">Nothing here yet. Use “Upload new” above to add a file.</p>';
+            if (countEl) countEl.textContent = '';
+            return;
+        }
+
+        const terms = q.split(/\s+/).filter(Boolean);
+        const list = pickerAssets.filter((a) => {
+            if (kindFilter && a.kind !== kindFilter) return false;
+            const hay = (assetDisplayName(a) + ' ' + (a.alt_text || '')).toLowerCase();
+            return terms.every((t) => hay.includes(t));
+        });
+        const time = (a) => Date.parse(a.created_at || '') || 0;
+        const byName = (a, b) => assetDisplayName(a).localeCompare(assetDisplayName(b), undefined, { numeric: true, sensitivity: 'base' });
+        list.sort({
+            newest: (a, b) => time(b) - time(a) || b.id - a.id,
+            oldest: (a, b) => time(a) - time(b) || a.id - b.id,
+            az: byName,
+            za: (a, b) => byName(b, a),
+        }[sort] || (() => 0));
+
+        if (countEl) {
+            const words = KIND_WORDS[kindFilter] || ['file', 'files'];
+            const total = pickerAssets.filter((a) => !kindFilter || a.kind === kindFilter).length;
+            countEl.textContent = terms.length
+                ? `${list.length} of ${total} ${total === 1 ? words[0] : words[1]}`
+                : `${total} ${total === 1 ? words[0] : words[1]}`;
+        }
+        if (!list.length) {
+            grid.innerHTML = '<p class="parish-admin-empty">No files match that search.</p>';
+            return;
+        }
+
+        grid.innerHTML = '';
+        // Date sorts get month headings so "the bulletin from August" is easy to find.
+        const byDate = sort === 'newest' || sort === 'oldest';
+        let lastGroup = null;
+        list.forEach((a) => {
+            const created = time(a) ? new Date(time(a)) : null;
+            if (byDate) {
+                const group = created ? created.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Earlier';
+                if (group !== lastGroup) {
+                    const h = document.createElement('h3');
+                    h.className = 'parish-asset-group';
+                    h.textContent = group;
+                    grid.appendChild(h);
+                    lastGroup = group;
+                }
+            }
+            const name = assetDisplayName(a);
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'parish-asset-card';
+            card.title = name;
+            const dateText = created ? created.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+            const meta = `<span class="parish-asset-card-name">${escText(name)}</span>${dateText ? `<span class="parish-asset-card-date">${escText(dateText)}</span>` : ''}`;
+            if (a.kind === 'image') {
+                card.innerHTML = `<img src="${escAttr(a.url)}" alt="${escAttr(a.alt_text || name)}" loading="lazy">${meta}`;
+            } else {
+                const icon = { pdf: 'fa-file-pdf', audio: 'fa-music', video: 'fa-video' }[a.kind] || 'fa-file';
+                card.innerHTML = `<span class="parish-asset-card-filetype"><i class="fas ${icon}"></i></span>${meta}`;
+            }
+            card.addEventListener('click', () => {
+                if (typeof pickerPendingCallback === 'function') pickerPendingCallback(a);
+                closeModal(document.getElementById('asset-picker'));
+            });
+            grid.appendChild(card);
+        });
     }
 
     async function uploadAsset(e) {
