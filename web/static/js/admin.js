@@ -258,6 +258,324 @@
         });
     }
 
+    // ========== Rich text editor (Text blocks) ==========
+    //
+    // A contenteditable area styled like the public page, with a toolbar for
+    // the handful of things a page needs. "Edit HTML" swaps in the raw source.
+    // Formatting goes through execCommand: deprecated on paper, but it's what
+    // every browser still ships, and it leaves existing HTML alone (unlike
+    // editors that rebuild content into their own model and drop what they
+    // don't know). The server sanitizes everything on render regardless.
+
+    const RTE_BUTTONS = [
+        ['bold', 'fa-bold', 'Bold (Ctrl+B)'],
+        ['italic', 'fa-italic', 'Italic (Ctrl+I)'],
+        ['underline', 'fa-underline', 'Underline (Ctrl+U)'],
+        '|',
+        ['insertUnorderedList', 'fa-list-ul', 'Bulleted list'],
+        ['insertOrderedList', 'fa-list-ol', 'Numbered list'],
+        '|',
+        ['justifyLeft', 'fa-align-left', 'Align left'],
+        ['justifyCenter', 'fa-align-center', 'Center'],
+        '|',
+        ['link', 'fa-link', 'Add a link'],
+        ['unlink', 'fa-link-slash', 'Remove link'],
+        ['image', 'fa-image', 'Insert a picture'],
+        ['pdf', 'fa-file-pdf', 'Link to a PDF'],
+        '|',
+        ['removeFormat', 'fa-eraser', 'Clear formatting'],
+    ];
+
+    // Tags kept when pasting from Word, Google Docs or another website; the
+    // rest are unwrapped to their text, and styles and classes are dropped.
+    const RTE_PASTE_TAGS = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'A', 'UL', 'OL', 'LI', 'H2', 'H3', 'H4', 'BLOCKQUOTE']);
+
+    function richEditorMarkup(html) {
+        const buttons = RTE_BUTTONS.map((b) => b === '|'
+            ? '<span class="parish-rte-sep" aria-hidden="true"></span>'
+            : `<button type="button" class="parish-rte-btn" data-cmd="${b[0]}" title="${b[2]}" aria-label="${b[2]}"><i class="fas ${b[1]}"></i></button>`
+        ).join('');
+        return `<div class="parish-rte" data-rte>
+            <div class="parish-rte-toolbar" role="toolbar" aria-label="Text formatting">
+                <select class="parish-rte-style" data-rte-style title="Text style" aria-label="Text style">
+                    <option value="p">Normal text</option>
+                    <option value="h2">Large heading</option>
+                    <option value="h3">Medium heading</option>
+                    <option value="h4">Small heading</option>
+                    <option value="blockquote">Quote</option>
+                </select>
+                <span class="parish-rte-sep" aria-hidden="true"></span>
+                ${buttons}
+                <button type="button" class="parish-rte-btn parish-rte-source-toggle" data-cmd="source" title="Edit the HTML directly" aria-pressed="false"><i class="fas fa-code"></i> HTML</button>
+            </div>
+            <div class="parish-rte-area parish-block-rich" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Start typing…"></div>
+            <textarea class="parish-rte-source" data-field="html" hidden spellcheck="false">${escText(html)}</textarea>
+        </div>`;
+    }
+
+    // Parse HTML inertly (a <template> runs no scripts and loads no images)
+    // and strip anything that could run when it's put into the live editor.
+    function rteFragment(html) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = html;
+        tpl.content.querySelectorAll('script, style, iframe, object, embed, form').forEach((n) => n.remove());
+        tpl.content.querySelectorAll('*').forEach((n) => {
+            [...n.attributes].forEach((a) => {
+                const name = a.name.toLowerCase();
+                if (name.startsWith('on')) n.removeAttribute(a.name);
+                if ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(a.value)) n.removeAttribute(a.name);
+            });
+        });
+        return tpl.content;
+    }
+
+    function rteCleanPaste(html) {
+        const frag = rteFragment(html);
+        const walk = (node) => {
+            [...node.childNodes].forEach((child) => {
+                if (child.nodeType === Node.COMMENT_NODE) { child.remove(); return; }
+                if (child.nodeType !== Node.ELEMENT_NODE) return;
+                walk(child);
+                if (!RTE_PASTE_TAGS.has(child.tagName)) {
+                    // DIVs become paragraphs; everything else melts into its text.
+                    if (child.tagName === 'DIV' && child.textContent.trim()) {
+                        const p = document.createElement('p');
+                        p.append(...child.childNodes);
+                        child.replaceWith(p);
+                    } else {
+                        child.replaceWith(...child.childNodes);
+                    }
+                    return;
+                }
+                const href = child.tagName === 'A' ? child.getAttribute('href') : null;
+                [...child.attributes].forEach((a) => child.removeAttribute(a.name));
+                if (href && rteSafeHref(href)) child.setAttribute('href', href);
+            });
+        };
+        walk(frag);
+        const box = document.createElement('div');
+        box.appendChild(frag);
+        // A single pasted paragraph (a phrase copied from Word) joins the
+        // current line instead of splitting it.
+        const kids = [...box.childNodes].filter((n) => n.nodeType === Node.ELEMENT_NODE || n.textContent.trim());
+        if (kids.length === 1 && kids[0].nodeName === 'P') return kids[0].innerHTML;
+        return box.innerHTML;
+    }
+
+    // Accepts what staff type for a link; returns a usable address or ''.
+    function rteSafeHref(raw) {
+        let v = String(raw || '').trim();
+        if (!v) return '';
+        if (/^www\./i.test(v)) v = 'https://' + v;
+        if (/^[^\s@/]+@[^\s@]+\.[a-z]{2,}$/i.test(v)) v = 'mailto:' + v;
+        if (/^(https?:\/\/|mailto:|tel:|\/(?![\/\\])|#)/i.test(v)) return v;
+        return '';
+    }
+
+    function initRichEditor(root, initialHTML) {
+        if (!root) return null;
+        const area = root.querySelector('.parish-rte-area');
+        const source = root.querySelector('.parish-rte-source');
+        const styleSel = root.querySelector('[data-rte-style]');
+        const toggle = root.querySelector('[data-cmd="source"]');
+        let dirty = false;
+        let savedRange = null;
+
+        area.appendChild(rteFragment(initialHTML));
+
+        const fitSource = () => { source.style.height = 'auto'; source.style.height = (source.scrollHeight + 4) + 'px'; };
+        const markDirty = () => { dirty = true; };
+        area.addEventListener('input', markDirty);
+        source.addEventListener('input', () => { markDirty(); fitSource(); });
+
+        const saveSelection = () => {
+            const sel = window.getSelection();
+            if (sel.rangeCount && area.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0).cloneRange();
+        };
+        const restoreSelection = () => {
+            area.focus();
+            if (!savedRange) return;
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+        };
+        const exec = (cmd, value) => {
+            document.execCommand('styleWithCSS', false, false);
+            document.execCommand('defaultParagraphSeparator', false, 'p');
+            document.execCommand(cmd, false, value);
+            markDirty();
+            refreshToolbar();
+        };
+
+        // Chrome's insertHTML command stamps inline styles onto what it inserts
+        // to "preserve" the look; inserting through a Range keeps HTML clean.
+        const insertClean = (html) => {
+            restoreSelection();
+            const sel = window.getSelection();
+            if (!sel.rangeCount || !area.contains(sel.anchorNode)) {
+                area.appendChild(rteFragment(html));
+            } else {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                const frag = rteFragment(html);
+                const last = frag.lastChild;
+                range.insertNode(frag);
+                if (last) {
+                    range.setStartAfter(last);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+            markDirty();
+            saveSelection();
+        };
+
+        function refreshToolbar() {
+            if (root.classList.contains('is-source')) return;
+            const sel = window.getSelection();
+            if (!sel.rangeCount || !area.contains(sel.anchorNode)) return;
+            root.querySelectorAll('.parish-rte-btn[data-cmd]').forEach((b) => {
+                const cmd = b.getAttribute('data-cmd');
+                if (['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList', 'justifyCenter'].includes(cmd)) {
+                    let on = false;
+                    try { on = document.queryCommandState(cmd); } catch (_) {}
+                    b.classList.toggle('is-active', on);
+                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }
+            });
+            let block = '';
+            try { block = String(document.queryCommandValue('formatBlock') || '').toLowerCase().replace(/[<>]/g, ''); } catch (_) {}
+            styleSel.value = ['h2', 'h3', 'h4', 'blockquote'].includes(block) ? block : 'p';
+        }
+
+        document.addEventListener('selectionchange', () => {
+            if (document.activeElement === area) { saveSelection(); refreshToolbar(); }
+        });
+        area.addEventListener('focus', () => document.execCommand('defaultParagraphSeparator', false, 'p'));
+
+        area.addEventListener('paste', (e) => {
+            const cd = e.clipboardData;
+            if (!cd) return;
+            e.preventDefault();
+            const html = cd.getData('text/html');
+            if (html) {
+                saveSelection();
+                insertClean(rteCleanPaste(html));
+            } else {
+                exec('insertText', cd.getData('text/plain'));
+            }
+        });
+
+        // Keep the text selection when a toolbar button is clicked.
+        root.querySelector('.parish-rte-toolbar').addEventListener('mousedown', (e) => {
+            if (e.target.closest('button')) e.preventDefault();
+        });
+
+        styleSel.addEventListener('change', () => {
+            restoreSelection();
+            exec('formatBlock', '<' + styleSel.value + '>');
+        });
+
+        root.querySelectorAll('.parish-rte-btn[data-cmd]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const cmd = btn.getAttribute('data-cmd');
+                if (cmd === 'source') { toggleSource(); return; }
+                saveSelection();
+                switch (cmd) {
+                    case 'link': {
+                        const sel = window.getSelection();
+                        const hasText = sel.rangeCount && !sel.isCollapsed && area.contains(sel.anchorNode);
+                        const raw = prompt(hasText
+                            ? 'Link address — a page on this site like /contact, or a full web address:'
+                            : 'Select the words to turn into a link first.\n\nOr enter an address to insert it as a link:', 'https://');
+                        if (raw === null) return;
+                        const href = rteSafeHref(raw);
+                        if (!href || href === 'https://') { alert('That doesn\'t look like a web address. Try something like /contact or https://example.com'); return; }
+                        restoreSelection();
+                        if (hasText) {
+                            exec('createLink', href);
+                        } else {
+                            insertClean(`<a href="${escAttr(href)}">${escText(raw.trim())}</a>`);
+                        }
+                        return;
+                    }
+                    case 'image':
+                        openAssetPicker('image', (asset) => {
+                            insertClean(`<img src="${escAttr(asset.url)}" alt="${escAttr(asset.alt_text || '')}" loading="lazy">`);
+                        });
+                        return;
+                    case 'pdf':
+                        openAssetPicker('pdf', (asset) => {
+                            restoreSelection();
+                            const sel = window.getSelection();
+                            if (sel.rangeCount && !sel.isCollapsed) {
+                                exec('createLink', asset.url);
+                            } else {
+                                insertClean(`<a href="${escAttr(asset.url)}">${escText(asset.original_name || 'Download PDF')}</a>`);
+                            }
+                        });
+                        return;
+                    default:
+                        restoreSelection();
+                        exec(cmd);
+                }
+            });
+        });
+
+        function toggleSource() {
+            const toSource = !root.classList.contains('is-source');
+            if (toSource) {
+                source.value = currentHTML();
+                root.classList.add('is-source');
+                area.hidden = true;
+                source.hidden = false;
+                fitSource();
+                source.focus();
+            } else {
+                area.replaceChildren(rteFragment(source.value));
+                root.classList.remove('is-source');
+                source.hidden = true;
+                area.hidden = false;
+                area.focus();
+            }
+            toggle.setAttribute('aria-pressed', toSource ? 'true' : 'false');
+            root.querySelectorAll('.parish-rte-toolbar button:not([data-cmd="source"]), .parish-rte-toolbar select')
+                .forEach((c) => { c.disabled = toSource; });
+        }
+
+        function currentHTML() {
+            const box = area.cloneNode(true);
+            // Chrome puts new lists and headings inside the current <p>, which
+            // isn't valid HTML and leaves blank gaps on the public page.
+            box.querySelectorAll('p').forEach((p) => {
+                if (p.querySelector('ul, ol, h2, h3, h4, blockquote, p, div')) p.replaceWith(...p.childNodes);
+            });
+            box.querySelectorAll('p').forEach((p) => { if (!p.childNodes.length) p.remove(); });
+            // Text typed straight into an empty box isn't in a paragraph yet.
+            const BLOCKS = /^(P|H[1-6]|UL|OL|BLOCKQUOTE|DIV|FIGURE|TABLE|HR|SECTION|ARTICLE|HEADER|ADDRESS|PRE|IFRAME)$/;
+            let para = null;
+            [...box.childNodes].forEach((n) => {
+                const inline = n.nodeType === Node.TEXT_NODE || (n.nodeType === Node.ELEMENT_NODE && !BLOCKS.test(n.tagName));
+                if (!inline) { para = null; return; }
+                if (n.nodeType === Node.TEXT_NODE && !n.textContent.trim() && !para) return;
+                if (n.nodeName === 'BR' && !para) { n.remove(); return; }
+                if (!para) { para = document.createElement('p'); n.before(para); }
+                para.appendChild(n);
+            });
+            // Browsers leave a lone <br> in an emptied editor.
+            const html = box.innerHTML.trim();
+            return /^(<br\s*\/?>|<p>(<br\s*\/?>)?<\/p>)?$/i.test(html) ? '' : html;
+        }
+
+        return {
+            getHTML() {
+                if (!dirty) return initialHTML; // untouched blocks save byte-for-byte
+                return root.classList.contains('is-source') ? source.value : currentHTML();
+            },
+        };
+    }
+
     // ========== Block editor ==========
 
     const BLOCK_TYPES = {
@@ -290,20 +608,11 @@
             label: 'Text', icon: 'fa-paragraph',
             default: { html: '' },
             render(d) {
-                return `<div class="parish-block-fields">
-                    <label class="parish-block-fields-full">Body (HTML allowed)
-                        <textarea data-field="html" rows="10">${escText(d.html || '')}</textarea>
-                    </label>
-                </div>`;
+                return richEditorMarkup(d.html || '');
             },
-            collect(el) { return { html: el.querySelector('[data-field="html"]').value }; },
-            afterRender(el) {
-                // Grow the box to fit its text (up to the CSS max-height) so
-                // long pages aren't read through a keyhole.
-                const ta = el.querySelector('textarea');
-                const fit = () => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 4) + 'px'; };
-                ta.addEventListener('input', fit);
-                requestAnimationFrame(fit);
+            collect(el) { return { html: el._rte ? el._rte.getHTML() : '' }; },
+            afterRender(el, d) {
+                el._rte = initRichEditor(el.querySelector('[data-rte]'), (d && d.html) || '');
             },
         },
         image: {

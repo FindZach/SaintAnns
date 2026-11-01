@@ -763,6 +763,21 @@ body.parish-menu-open { overflow: hidden; }
 .parish-block-rich { line-height: 1.7; color: var(--parish-ink); }
 .parish-block-rich p { margin: 0 0 1rem; }
 .parish-block-rich a { text-decoration: underline; }
+/* Shared by the public page and the admin Text editor, so what staff see is
+   what visitors get. Tailwind's reset strips these otherwise. */
+.parish-block-rich h2, .parish-block-rich h3, .parish-block-rich h4 { color: var(--parish-navy); margin: 1.5rem 0 0.6rem; }
+.parish-block-rich h2 { font-size: 1.75rem; }
+.parish-block-rich h3 { font-size: 1.4rem; }
+.parish-block-rich h4 { font-size: 1.15rem; }
+.parish-block-rich ul, .parish-block-rich ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+.parish-block-rich ul { list-style: disc; }
+.parish-block-rich ol { list-style: decimal; }
+.parish-block-rich li { margin-bottom: 0.25rem; }
+.parish-block-rich blockquote {
+    border-left: 3px solid var(--parish-gold);
+    margin: 0 0 1rem; padding: 0.25rem 0 0.25rem 1rem; font-style: italic;
+}
+.parish-block-rich img { max-width: 100%; height: auto; border-radius: 0.5rem; }
 .parish-block-divider {
     border: 0;
     border-top: 1px solid var(--parish-rule);
@@ -1583,6 +1598,52 @@ body.parish-menu-open { overflow: hidden; }
 .parish-block-fields-stack > label { display: flex; flex-direction: column; gap: 0.3rem; }
 .parish-block-fields-stack input, .parish-block-fields-stack select { width: 100%; }
 .parish-block-fields-stack > button { align-self: flex-start; }
+/* Rich text editor for Text blocks */
+.parish-rte {
+    border: 1px solid var(--parish-rule);
+    border-radius: 0.5rem;
+    background: var(--parish-white);
+    overflow: hidden;
+}
+.parish-rte:focus-within { border-color: var(--parish-gold); box-shadow: 0 0 0 3px rgba(184, 146, 47, 0.15); }
+.parish-rte-toolbar {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem;
+    padding: 0.4rem 0.5rem;
+    background: var(--parish-cream);
+    border-bottom: 1px solid var(--parish-rule);
+}
+.parish-rte-btn {
+    background: none; border: 1px solid transparent; border-radius: 0.35rem;
+    min-width: 2rem; height: 2rem; padding: 0 0.45rem;
+    color: var(--parish-navy); cursor: pointer; font: inherit; font-size: 0.85rem;
+}
+.parish-rte-btn:hover:not(:disabled) { background: var(--parish-white); border-color: var(--parish-rule); }
+.parish-rte-btn.is-active, .parish-rte-btn.is-active:hover:not(:disabled) { background: var(--parish-navy); color: var(--parish-white); }
+.parish-rte-btn:disabled, .parish-rte-style:disabled { opacity: 0.35; cursor: default; }
+.parish-rte-source-toggle { margin-left: auto; font-weight: 600; }
+.parish-rte-source-toggle[aria-pressed="true"] { background: var(--parish-navy); color: var(--parish-white); }
+.parish-rte-sep { width: 1px; height: 1.25rem; background: var(--parish-rule); margin: 0 0.3rem; }
+.parish-block-fields .parish-rte-style, .parish-rte-style {
+    min-width: 0; height: 2rem; padding: 0 0.4rem;
+    border: 1px solid var(--parish-rule); border-radius: 0.35rem;
+    background: var(--parish-white); color: var(--parish-ink); font: inherit; font-size: 0.85rem;
+}
+.parish-rte-area {
+    min-height: 200px; max-height: 70vh; overflow-y: auto;
+    padding: 1rem 1.25rem;
+    outline: none;
+}
+.parish-rte-area:empty::before { content: attr(data-placeholder); color: var(--parish-muted-2); }
+.parish-rte-source {
+    display: block; width: 100%; min-height: 200px; max-height: 70vh;
+    border: 0; padding: 1rem; resize: vertical;
+    font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; line-height: 1.5;
+    color: var(--parish-ink); background: var(--parish-white);
+}
+.parish-rte-source:focus { outline: none; }
+.parish-rte-source[hidden], .parish-rte-area[hidden] { display: none; }
+
 .parish-block-asset-preview {
     width: 150px; height: 100px;
     background: var(--parish-cream-warm);
