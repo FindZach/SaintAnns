@@ -17,7 +17,7 @@
         <section class="parish-admin-panel">
             <table class="parish-admin-table" id="user-table">
                 <thead>
-                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last signed in</th><th></th></tr>
                 </thead>
                 <tbody>
                     {{range .users}}
@@ -37,6 +37,7 @@
                         <td>
                             {{if .IsActive}}<span class="parish-admin-badge parish-admin-badge-ok">Active</span>{{else}}<span class="parish-admin-badge parish-admin-badge-draft">Deactivated</span>{{end}}
                         </td>
+                        <td>{{.LastLoginLabel}}</td>
                         <td class="parish-admin-row-actions">
                             {{if ne .ID $.currentUserID}}
                             <button type="button" class="parish-admin-link" data-action="reset-password"><i class="fas fa-key"></i> Set password</button>

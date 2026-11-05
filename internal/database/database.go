@@ -59,6 +59,11 @@ func EnsureAdminSchema(db *gorm.DB) error {
 			return fmt.Errorf("failed to add users.role: %w", err)
 		}
 	}
+	if !db.Migrator().HasColumn(&models.User{}, "LastLoginAt") {
+		if err := db.Migrator().AddColumn(&models.User{}, "LastLoginAt"); err != nil {
+			return fmt.Errorf("failed to add users.last_login_at: %w", err)
+		}
+	}
 	if err := db.AutoMigrate(&models.ContactMessage{}); err != nil {
 		return fmt.Errorf("failed to create contact messages table: %w", err)
 	}

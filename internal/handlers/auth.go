@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"olv-parish/internal/auth"
 	"olv-parish/internal/config"
@@ -117,6 +118,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
+
+	// UpdateColumn leaves updated_at alone; a failed write shouldn't block sign-in.
+	h.db.Model(&user).UpdateColumn("last_login_at", time.Now())
 
 	secure := gin.Mode() == gin.ReleaseMode
 	// MaxAge=86400 (24h), HttpOnly=true, Secure=release-only, SameSite=Lax
