@@ -14,6 +14,7 @@
         wireRegistrationForm();
         wireRegistrationList();
         wireEnvelopeFieldToggle();
+        wireLightbox();
     }
 
     // ---------- Mobile menu ----------
@@ -278,6 +279,78 @@
     }
 
     // ---------- Helpers ----------
+    // ---------- Photo gallery lightbox ----------
+    // Any <a data-lightbox href=picture> opens full-size over the page; the
+    // links in one gallery form a set you can step through with arrows.
+    function wireLightbox() {
+        const links = Array.from(document.querySelectorAll('a[data-lightbox]'));
+        if (!links.length) return;
+        const box = document.createElement('div');
+        box.className = 'parish-lightbox';
+        box.setAttribute('hidden', '');
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        box.setAttribute('aria-label', 'Photo viewer');
+        box.innerHTML = '<button type="button" class="parish-lightbox-btn parish-lightbox-close" aria-label="Close">&times;</button>'
+            + '<button type="button" class="parish-lightbox-btn parish-lightbox-prev" aria-label="Previous photo">&lsaquo;</button>'
+            + '<img alt="">'
+            + '<button type="button" class="parish-lightbox-btn parish-lightbox-next" aria-label="Next photo">&rsaquo;</button>'
+            + '<span class="parish-lightbox-count" aria-live="polite"></span>';
+        document.body.appendChild(box);
+        const img = box.querySelector('img');
+        const count = box.querySelector('.parish-lightbox-count');
+        const prevBtn = box.querySelector('.parish-lightbox-prev');
+        const nextBtn = box.querySelector('.parish-lightbox-next');
+        let set = [];
+        let index = 0;
+        let opener = null;
+
+        const showAt = (i) => {
+            index = (i + set.length) % set.length;
+            const link = set[index];
+            img.src = link.getAttribute('href');
+            img.alt = link.getAttribute('data-alt') || '';
+            count.textContent = set.length > 1 ? (index + 1) + ' of ' + set.length : '';
+            prevBtn.hidden = nextBtn.hidden = set.length < 2;
+        };
+        const open = (link) => {
+            const group = link.closest('.parish-gallery-grid');
+            set = group ? Array.from(group.querySelectorAll('a[data-lightbox]')) : [link];
+            opener = link;
+            showAt(set.indexOf(link));
+            box.removeAttribute('hidden');
+            document.body.style.overflow = 'hidden';
+            box.querySelector('.parish-lightbox-close').focus();
+        };
+        const close = () => {
+            box.setAttribute('hidden', '');
+            img.src = '';
+            document.body.style.overflow = '';
+            if (opener) opener.focus();
+        };
+
+        links.forEach((link) => link.addEventListener('click', (e) => { e.preventDefault(); open(link); }));
+        box.querySelector('.parish-lightbox-close').addEventListener('click', close);
+        prevBtn.addEventListener('click', () => showAt(index - 1));
+        nextBtn.addEventListener('click', () => showAt(index + 1));
+        box.addEventListener('click', (e) => { if (e.target === box) close(); });
+        document.addEventListener('keydown', (e) => {
+            if (box.hasAttribute('hidden')) return;
+            if (e.key === 'Escape') close();
+            else if (e.key === 'ArrowLeft') showAt(index - 1);
+            else if (e.key === 'ArrowRight') showAt(index + 1);
+        });
+        // Swipe on phones.
+        let touchX = null;
+        box.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+        box.addEventListener('touchend', (e) => {
+            if (touchX === null) return;
+            const dx = e.changedTouches[0].clientX - touchX;
+            touchX = null;
+            if (Math.abs(dx) > 40) showAt(dx < 0 ? index + 1 : index - 1);
+        });
+    }
+
     function value(id) {
         const el = document.getElementById(id);
         return el ? el.value.trim() : '';

@@ -33,6 +33,7 @@ func main() {
 	importURL := flag.String("import-url", "", "With --import: import just this URL (e.g. /about/) instead of the whole list")
 	importLimit := flag.Int("import-limit", 0, "With --import: stop after N pages (0 = all)")
 	seedHistory := flag.Bool("seed-history", false, "Upsert the /about/our-history/ parish-history page and exit")
+	groupPhotos := flag.Bool("group-photos", false, "Fold runs of three or more stacked pictures on every page into photo-gallery blocks, then exit")
 	migrateHomilies := flag.Bool("migrate-homilies", false, "Scan the imported last-weekends-homily Page row for PDF links and create Homily rows from them, then exit")
 	flag.Parse()
 
@@ -141,6 +142,19 @@ func main() {
 		}
 		if err := database.SeedHistoryPage(db); err != nil {
 			log.Fatalf("Seed history failed: %v", err)
+		}
+		return
+	}
+
+	if *groupPhotos {
+		if db == nil {
+			log.Fatal("Cannot group photos: no database connection")
+		}
+		if err := database.EnsureContentSchema(db); err != nil {
+			log.Fatalf("Cannot group photos: ensure content schema: %v", err)
+		}
+		if err := database.GroupPagePhotos(db); err != nil {
+			log.Fatalf("Group photos failed: %v", err)
 		}
 		return
 	}

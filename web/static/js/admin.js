@@ -691,6 +691,66 @@
                 }
             },
         },
+        image_row: {
+            label: 'Photo gallery', icon: 'fa-images',
+            default: { asset_ids: [], caption: '' },
+            render(d) {
+                return `
+                    <div class="parish-block-fields-stack">
+                        <div class="parish-gallery-edit" data-gallery aria-label="Photos in this gallery"></div>
+                        <div class="parish-gallery-edit-actions">
+                            <button type="button" class="parish-admin-link" data-action="add-photos"><i class="fas fa-plus"></i> Add photos</button>
+                            <span class="parish-admin-subtitle" data-gallery-count></span>
+                        </div>
+                        <label>Caption <input type="text" data-field="caption" value="${escAttr(d.caption || '')}"></label>
+                    </div>`;
+            },
+            collect(el) {
+                return {
+                    asset_ids: Array.from(el.querySelectorAll('[data-gallery] [data-asset-id]'))
+                        .map((t) => parseInt(t.getAttribute('data-asset-id'), 10))
+                        .filter((n) => n > 0),
+                    caption: el.querySelector('[data-field="caption"]').value,
+                };
+            },
+            afterRender(el, d) {
+                const list = el.querySelector('[data-gallery]');
+                const countEl = el.querySelector('[data-gallery-count]');
+                const updateCount = () => {
+                    const n = list.children.length;
+                    countEl.textContent = n ? `${n} photo${n === 1 ? '' : 's'} — drag to reorder` : 'No photos yet';
+                };
+                const addThumb = (id, url, name) => {
+                    const t = document.createElement('div');
+                    t.className = 'parish-gallery-thumb';
+                    t.setAttribute('data-asset-id', id);
+                    t.title = name || '';
+                    t.innerHTML = `${url ? `<img src="${escAttr(url)}" alt="" loading="lazy">` : '<span class="parish-block-asset-empty">Missing</span>'}
+                        <button type="button" class="parish-gallery-thumb-remove" aria-label="Remove photo"><i class="fas fa-times"></i></button>`;
+                    t.querySelector('button').addEventListener('click', () => { t.remove(); updateCount(); });
+                    list.appendChild(t);
+                };
+                const ids = (d && d.asset_ids) || [];
+                imageAssetsOnce().then((assets) => {
+                    const byId = new Map(assets.map((a) => [String(a.id), a]));
+                    ids.forEach((id) => {
+                        const a = byId.get(String(id));
+                        addThumb(id, a ? a.url : '', a ? (a.name || a.original_name) : '');
+                    });
+                    updateCount();
+                });
+                updateCount();
+                el.querySelector('[data-action="add-photos"]').addEventListener('click', () => {
+                    openAssetPicker('image', (chosen) => {
+                        chosen.forEach((a) => addThumb(a.id, a.url, a.name || a.original_name));
+                        updateCount();
+                    }, null, { multi: true });
+                });
+                if (window.Sortable) {
+                    Sortable.create(list, { animation: 150, ghostClass: 'parish-editor-block-ghost' });
+                }
+            },
+        },
         pdf_link: {
             label: 'PDF link', icon: 'fa-file-pdf',
             default: { asset_id: 0, label: '' },
@@ -870,7 +930,6 @@
     // shown read-only and saved back exactly as loaded.
     const PASSTHROUGH_LABELS = {
         child_pages: ['fa-sitemap', 'Sub-page cards (generated automatically)'],
-        image_row: ['fa-images', 'Image row'],
         html_raw: ['fa-code', 'Embedded HTML'],
     };
 
@@ -981,6 +1040,10 @@
     let pickerPendingCallback = null;
     let pickerAssets = [];
     let pickerCurrentId = '';
+    // Multi mode (a gallery's "Add photos"): clicking a card ticks it, and a
+    // Done button hands the whole selection back in the order it was ticked.
+    let pickerMulti = false;
+    let pickerSelected = [];
 
     const PICKER_SORT_KEY = 'olv.assetPickerSort';
     const KIND_WORDS = { image: ['picture', 'pictures'], pdf: ['PDF', 'PDFs'], audio: ['audio file', 'audio files'], video: ['video', 'videos'] };
@@ -994,6 +1057,13 @@
         const sort = document.getElementById('asset-picker-sort');
         const kind = document.getElementById('asset-picker-kind');
         if (search) search.addEventListener('input', renderAssetGrid);
+        const done = document.getElementById('asset-picker-done');
+        if (done) {
+            done.addEventListener('click', () => {
+                if (typeof pickerPendingCallback === 'function' && pickerSelected.length) pickerPendingCallback(pickerSelected.slice());
+                closeModal(document.getElementById('asset-picker'));
+            });
+        }
         if (kind) kind.addEventListener('change', renderAssetGrid);
         if (sort) {
             try { sort.value = localStorage.getItem(PICKER_SORT_KEY) || 'newest'; } catch (_) {}
@@ -1006,10 +1076,17 @@
     }
 
     // `currentId` is the file already chosen, if any; it's shown first.
-    async function openAssetPicker(kind, callback, currentId) {
+    async function openAssetPicker(kind, callback, currentId, opts) {
         pickerPendingKind = kind;
         pickerPendingCallback = callback;
         pickerCurrentId = currentId && currentId !== '0' ? String(currentId) : '';
+        pickerMulti = !!(opts && opts.multi);
+        pickerSelected = [];
+        const title = document.getElementById('asset-picker-title');
+        if (title) title.textContent = pickerMulti ? 'Choose photos' : 'Choose a file';
+        const footer = document.getElementById('asset-picker-footer');
+        if (footer) footer.hidden = !pickerMulti;
+        updatePickerDone();
         const search = document.getElementById('asset-picker-search');
         if (search) search.value = '';
         // A picker opened for one kind (a flyer, a bulletin PDF) only shows
@@ -1129,11 +1206,32 @@
         } else {
             card.innerHTML = iconHTML + meta;
         }
+        if (pickerMulti) {
+            const picked = pickerSelected.includes(a);
+            card.classList.toggle('is-selected', picked);
+            card.setAttribute('aria-pressed', picked ? 'true' : 'false');
+            card.addEventListener('click', () => {
+                const i = pickerSelected.indexOf(a);
+                if (i >= 0) pickerSelected.splice(i, 1); else pickerSelected.push(a);
+                card.classList.toggle('is-selected', i < 0);
+                card.setAttribute('aria-pressed', i < 0 ? 'true' : 'false');
+                updatePickerDone();
+            });
+            return card;
+        }
         card.addEventListener('click', () => {
             if (typeof pickerPendingCallback === 'function') pickerPendingCallback(a);
             closeModal(document.getElementById('asset-picker'));
         });
         return card;
+    }
+
+    function updatePickerDone() {
+        const done = document.getElementById('asset-picker-done');
+        if (!done) return;
+        const n = pickerSelected.length;
+        done.disabled = !n;
+        done.textContent = n ? `Add ${n} photo${n === 1 ? '' : 's'}` : 'Add photos';
     }
 
     async function uploadAsset(e) {

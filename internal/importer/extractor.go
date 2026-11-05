@@ -62,6 +62,9 @@ func (e *extractor) extract(root *html.Node) (models.Blocks, error) {
 	var out models.Blocks
 	e.walk(container, &out)
 	out = mergeRichText(out)
+	// A WordPress album comes through as one image per picture; show it as
+	// a gallery rather than a column of medium pictures.
+	out, _ = models.GroupPhotoRuns(out, 3)
 	return out, nil
 }
 

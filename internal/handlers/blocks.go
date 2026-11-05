@@ -136,25 +136,32 @@ type imageRowData struct {
 	Caption  string `json:"caption"`
 }
 
+// renderImageRow draws a photo gallery: a responsive grid of uniform
+// thumbnails that fills the page width on any screen, each opening the
+// full-size picture in the lightbox (main.js). The block type is still
+// called image_row for compatibility with pages saved before it grew up.
 func renderImageRow(out *strings.Builder, raw json.RawMessage, db *gorm.DB) {
 	var d imageRowData
 	if err := json.Unmarshal(raw, &d); err != nil || len(d.AssetIDs) == 0 {
 		return
 	}
-	out.WriteString(`<div class="parish-block-image-row">`)
+	out.WriteString(`<figure class="parish-block-gallery">`)
+	out.WriteString(`<div class="parish-gallery-grid">`)
 	for _, id := range d.AssetIDs {
 		asset := loadAsset(db, id)
 		if asset == nil {
 			continue
 		}
-		fmt.Fprintf(out, `<img src="%s" alt="%s" loading="lazy">`,
-			html.EscapeString(asset.URL()), html.EscapeString(asset.AltText))
-	}
-	if d.Caption != "" {
-		fmt.Fprintf(out, `<p class="parish-block-image-row-caption">%s</p>`,
-			html.EscapeString(d.Caption))
+		url := html.EscapeString(asset.URL())
+		alt := html.EscapeString(asset.AltText)
+		fmt.Fprintf(out, `<a class="parish-gallery-item" href="%s" data-lightbox data-alt="%s"><img src="%s" alt="%s" loading="lazy"></a>`,
+			url, alt, url, alt)
 	}
 	out.WriteString(`</div>`)
+	if d.Caption != "" {
+		fmt.Fprintf(out, `<figcaption>%s</figcaption>`, html.EscapeString(d.Caption))
+	}
+	out.WriteString(`</figure>`)
 }
 
 type pdfLinkData struct {
